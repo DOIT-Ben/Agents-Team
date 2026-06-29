@@ -24,8 +24,21 @@ class TemplateContractTests(unittest.TestCase):
 
     def test_pr_template_contains_delivery_evidence_fields(self):
         text = (TEMPLATES / "pull_request_template.md").read_text(encoding="utf-8")
-        for heading in ["关联任务", "实际改动", "验证证据", "QA 结论", "剩余风险", "回滚方式"]:
+        headings = ["关联任务", "Goal 对照", "实际改动", "必须完成证据", "验收门禁结果", "任务边界检查", "QA 结论", "剩余风险", "回滚方式"]
+        for heading in headings:
             self.assertIn(f"## {heading}", text)
+
+    def test_pr_contract_validator_checks_issue_lookup(self):
+        text = (TEMPLATES / "validate_pr_contract.py").read_text(encoding="utf-8")
+        for phrase in ["REQUIRED_ISSUE_TERMS", "--require-issue-lookup", "GITHUB_TOKEN", "Goal", "任务边界"]:
+            self.assertIn(phrase, text)
+
+    def test_collaboration_gate_runs_pr_contract_validator(self):
+        text = (TEMPLATES / "collaboration-gate.yml").read_text(encoding="utf-8")
+        self.assertIn("validate_team_collaboration.py", text)
+        self.assertIn("validate_pr_contract.py", text)
+        self.assertIn("--require-issue-lookup", text)
+        self.assertIn("issues: read", text)
 
     def test_agents_block_contains_core_non_negotiable_rules(self):
         text = (TEMPLATES / "agents-managed-block.md").read_text(encoding="utf-8")
