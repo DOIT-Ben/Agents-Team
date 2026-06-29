@@ -115,7 +115,7 @@ codex plugin marketplace add DOIT-Ben/Agents-Team --ref master
 
 初始化默认只做 **dry-run**。Codex 会先展示识别到的技术栈、测试命令、准备新增或修改的文件、冲突和未知项；只有你明确确认后才真正写入。
 
-首次安装有一个明确的 bootstrap 步骤：先创建 Draft PR，再向该分支推送一个提交。生成的 `push` Gate 会反查开放 PR，并验证 Issue、当前 head 证据和 QA 契约。首次安装不能只等 `pull_request` 事件，因为新 workflow 尚未存在于默认分支。
+首次安装有一个明确的 bootstrap 步骤：先创建 Draft PR，再向该分支推送一个经过审查的提交，由 `synchronize` 事件验证 Issue、当前 head 证据和 QA 契约。修正 PR 正文时由 `edited` 事件针对同一 head 复验，不需要制造新提交。
 
 ### 本地安装
 

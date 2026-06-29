@@ -18,15 +18,15 @@ python3 PLUGIN_ROOT/scripts/validate_project.py /path/to/project
 
 ### 首次安装 bootstrap
 
-GitHub 的 `pull_request` workflow 在文件尚未进入默认分支时不会触发。初始化后的首次 PR 必须按以下顺序执行：
+初始化后的首次 PR 必须按以下顺序执行：
 
 1. 从完整仓库检出创建初始化分支，保留既有 `AGENTS.md` 和项目规则。
 2. 创建完整 Goal Issue 和 Draft PR。
-3. 将 PR 转为 Ready 后，再向同一分支推送一个提交。
-4. `push` Gate 反查该分支唯一的开放 PR，核对 Issue、当前 head SHA、证据和独立 QA。
-5. 缺少 PR、Token、权限或唯一匹配时一律失败，不得降级通过。
+3. 将 PR 转为 Ready 后，再向同一分支推送一个经过审查的提交。
+4. `synchronize` 事件核对 Issue、当前 head SHA、证据和独立 QA。
+5. 缺少 Token、Issue 权限或证据时一律失败，不得降级通过。
 
-默认分支上的 push 只运行项目适配器校验，不执行 PR 反查。bootstrap Gate 通过后才可考虑合并初始化 PR。
+bootstrap Gate 通过后才可考虑合并初始化 PR。
 修正 PR 正文证据时不需要制造新提交；`edited` 事件会针对同一 head SHA 重新执行门禁，避免证据刚写入就因新提交失效。
 
 ## 执行 Goal

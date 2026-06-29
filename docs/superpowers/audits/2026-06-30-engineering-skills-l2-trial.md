@@ -22,19 +22,23 @@ The first projected adapter replaced the repository's existing `AGENTS.md`, and 
 
 This is an execution failure, not an initializer hash failure: the empty projection hid the existing file from the initializer. The mechanism now states that initialization from an incomplete projection is invalid.
 
-## Failure 2: workflow bootstrap gap
+## Failure 2: incomplete event coverage
 
-The ready PR and a subsequent head commit produced no workflow run. GitHub only triggers a `pull_request` workflow when that workflow file already exists on the default branch. A workflow introduced by its own initialization PR therefore cannot validate that PR through `pull_request` alone.
+An early workflow query returned no runs and was initially attributed to a default-branch bootstrap limitation. That diagnosis was premature: the query had not waited for Actions scheduling. The later logs show that run `28387169091` was a real `pull_request/synchronize` execution using the workflow introduced by the trial branch.
 
-The generated gate now also listens to non-default branch `push` events. On push it uses `GITHUB_TOKEN` to resolve exactly one open PR for the branch and applies the same linked Issue, current-head evidence, timestamp, artifact, and independent QA checks. Missing permissions or ambiguous PR lookup fail closed.
+The actual event gap was narrower and reproducible. Correcting PR evidence does not change the head SHA, but the default `pull_request` activity set does not include `edited` or `ready_for_review`. Without those activity types, a corrected body cannot automatically revalidate against the same commit. The gate now declares `opened`, `synchronize`, `reopened`, `ready_for_review`, and `edited`; it does not add a duplicate branch `push` workflow.
 
-The first failed run also showed that corrected PR evidence needs a trigger that does not change the head SHA. The workflow now listens to `edited` and `ready_for_review`, allowing a PR body correction to re-run validation against the same commit instead of making its own `commitSha` stale.
+## Remote proof
 
-## Pending remote proof
+The trial completed the fail-to-pass loop on head `853971d3e643f0ea3e3127e6f9176c798d822a21`:
 
-The updated bootstrap workflow must be copied to the trial branch and exercised twice:
+1. Run `28387169091` failed with missing PR sections, missing Issue rollback, incomplete test evidence, and non-independent QA. The project adapter step passed.
+2. Run `28387382762` failed again on the current head while the old PR body was still incomplete.
+3. Editing the PR body added the exact contract sections, current head SHA, ISO timestamp, HTTPS artifact, and scoped independent Actions QA. Run `28387426971` passed without changing the head.
+4. The successful run URL was written back into the PR evidence. Final revalidation run `28387455597` passed both the project adapter and PR contract steps on the same head.
 
-1. Keep incomplete evidence and confirm the push gate fails.
-2. Replace it with current-head evidence and independent QA, then confirm success.
+The trial PR remains unmerged by design. It changes no scanner, privacy, ranking, release, or production behavior, and the final comparison contains zero deleted lines.
 
-Until both runs exist, the integration PR remains Draft and the real-use gate is not complete.
+## Conclusion
+
+The real-use gate is complete for this scope. Agents-Team now proves three properties on GitHub: incomplete contracts fail closed, corrected evidence can be revalidated without making its own commit SHA stale, and existing project rules survive initialization when a complete checkout is used.

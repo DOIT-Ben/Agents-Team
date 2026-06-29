@@ -1,7 +1,6 @@
 import importlib.util
 import unittest
 from pathlib import Path
-from unittest.mock import patch
 
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
@@ -76,27 +75,6 @@ class GeneratedPrGateTests(unittest.TestCase):
     def test_non_independent_qa_is_rejected(self):
         errors = MODULE.validate(VALID_PR.replace("独立上下文：是", "独立上下文：否"), VALID_ISSUE, "abc123")
         self.assertTrue(any("independent" in error for error in errors))
-
-    def test_push_event_resolves_open_pull_request_for_branch(self):
-        event = {
-            "ref": "refs/heads/test/agents-team-l2-smoke",
-            "after": "abc123",
-            "repository": {"full_name": "DOIT-Ben/skill-usage"},
-        }
-        expected = {"body": VALID_PR, "draft": False, "head": {"sha": "abc123"}}
-        with patch.object(MODULE, "fetch_pull_request", return_value=expected) as fetch:
-            self.assertEqual(MODULE.pull_request_from_event(event, "token"), expected)
-        fetch.assert_called_once_with("DOIT-Ben/skill-usage", "test/agents-team-l2-smoke", "token")
-
-    def test_push_event_without_token_fails_closed(self):
-        event = {
-            "ref": "refs/heads/test/agents-team-l2-smoke",
-            "after": "abc123",
-            "repository": {"full_name": "DOIT-Ben/skill-usage"},
-        }
-        with self.assertRaises(RuntimeError):
-            MODULE.pull_request_from_event(event, "")
-
 
 if __name__ == "__main__":
     unittest.main()
