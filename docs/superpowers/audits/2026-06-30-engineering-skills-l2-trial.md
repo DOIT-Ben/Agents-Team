@@ -30,12 +30,18 @@ The actual event gap was narrower and reproducible. Correcting PR evidence does 
 
 ## Remote proof
 
-The trial completed the fail-to-pass loop on head `853971d3e643f0ea3e3127e6f9176c798d822a21`:
+The preliminary mechanism completed a fail-to-pass loop on head `853971d3e643f0ea3e3127e6f9176c798d822a21`:
 
 1. Run `28387169091` failed with missing PR sections, missing Issue rollback, incomplete test evidence, and non-independent QA. The project adapter step passed.
 2. Run `28387382762` failed again on the current head while the old PR body was still incomplete.
 3. Editing the PR body added the exact contract sections, current head SHA, ISO timestamp, HTTPS artifact, and scoped independent Actions QA. Run `28387426971` passed without changing the head.
 4. The successful run URL was written back into the PR evidence. Final revalidation run `28387455597` passed both the project adapter and PR contract steps on the same head.
+
+After removing the redundant branch `push` trigger, the final mechanism was installed on head `18f72870761b649162d10dec3c0a3fe4584ace7f` and repeated the proof:
+
+1. Synchronize run `28387684536` failed because the PR still cited the previous head.
+2. The PR body was corrected without a commit; edited-event run `28387696842` passed.
+3. The successful artifact URL was written back; final edited-event run `28387720941` passed again on the same head.
 
 The trial PR remains unmerged by design. It changes no scanner, privacy, ranking, release, or production behavior, and the final comparison contains zero deleted lines.
 
