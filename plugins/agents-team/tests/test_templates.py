@@ -43,8 +43,16 @@ class TemplateContractTests(unittest.TestCase):
         for phrase in ["GITHUB_TOKEN", "head.sha", "commitSha", "timestamp", "Issue"]:
             self.assertIn(phrase, validator)
         workflow = (TEMPLATES / "collaboration-gate.yml").read_text(encoding="utf-8")
-        for phrase in ["pull-requests: read", "issues: read", "validate_pr_contract.py", "GITHUB_EVENT_PATH"]:
+        for phrase in [
+            "push:", "pull-requests: read", "issues: read", "validate_pr_contract.py",
+            "GITHUB_EVENT_PATH", "github.event.repository.default_branch",
+        ]:
             self.assertIn(phrase, workflow)
+
+    def test_initialization_skill_explains_bootstrap_gate(self):
+        skill = (PLUGIN_ROOT / "skills" / "initialize-team-collaboration" / "SKILL.md").read_text(encoding="utf-8")
+        for phrase in ["bootstrap", "push", "开放 PR", "默认分支"]:
+            self.assertIn(phrase, skill)
 
     def test_initializer_materializes_protocol_2_gate_and_doctor(self):
         self.assertEqual(TEMPLATE_TARGETS["validate_pr_contract.py"], ".codex/scripts/validate_pr_contract.py")

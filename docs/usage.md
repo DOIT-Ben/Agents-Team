@@ -16,6 +16,18 @@ python3 PLUGIN_ROOT/scripts/initialize_project.py /path/to/project --apply
 python3 PLUGIN_ROOT/scripts/validate_project.py /path/to/project
 ```
 
+### 首次安装 bootstrap
+
+GitHub 的 `pull_request` workflow 在文件尚未进入默认分支时不会触发。初始化后的首次 PR 必须按以下顺序执行：
+
+1. 从完整仓库检出创建初始化分支，保留既有 `AGENTS.md` 和项目规则。
+2. 创建完整 Goal Issue 和 Draft PR。
+3. 将 PR 转为 Ready 后，再向同一分支推送一个提交。
+4. `push` Gate 反查该分支唯一的开放 PR，核对 Issue、当前 head SHA、证据和独立 QA。
+5. 缺少 PR、Token、权限或唯一匹配时一律失败，不得降级通过。
+
+默认分支上的 push 只运行项目适配器校验，不执行 PR 反查。bootstrap Gate 通过后才可考虑合并初始化 PR。
+
 ## 执行 Goal
 
 L2/L3 Issue 必须依次包含 Goal、必须完成、验收门禁、任务边界、风险等级、依赖与阻塞条件。
@@ -58,6 +70,7 @@ python3 PLUGIN_ROOT/scripts/manage_project.py remove /path/to/project
 ## 已知边界
 
 - Plugin 不自动创建 GitHub 仓库。
+- 首次初始化必须从完整检出执行；对空目录或不完整投影执行初始化无法证明既有文件未被覆盖。
 - GitHub 分支保护属于仓库设置，必须由有权限的用户或连接器配置。
 - 自动扫描结果需要 Codex 判断；不能可靠识别的构建和测试命令必须询问用户。
 - Plugin 不承诺单靠文字规则实现绝对服从；可机械约束由项目验证器和 CI 承担。

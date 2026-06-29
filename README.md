@@ -115,6 +115,8 @@ codex plugin marketplace add DOIT-Ben/Agents-Team --ref master
 
 初始化默认只做 **dry-run**。Codex 会先展示识别到的技术栈、测试命令、准备新增或修改的文件、冲突和未知项；只有你明确确认后才真正写入。
 
+首次安装有一个明确的 bootstrap 步骤：先创建 Draft PR，再向该分支推送一个提交。生成的 `push` Gate 会反查开放 PR，并验证 Issue、当前 head 证据和 QA 契约。首次安装不能只等 `pull_request` 事件，因为新 workflow 尚未存在于默认分支。
+
 ### 本地安装
 
 ```bash
@@ -139,6 +141,7 @@ codex plugin marketplace add /absolute/path/to/Agents-Team
 
 - 初始化、升级、修复和移除都先预览，写入必须获得明确确认。
 - 不覆盖已有 `AGENTS.md`、GitHub 模板或业务 CI。
+- 初始化必须基于完整仓库检出；禁止用缺少既有文件的空投影生成适配器。
 - Hook 只做只读状态检测，不执行项目命令，也不修改仓库。
 - 没有真正独立的验收上下文，就不能伪造“独立 QA”。
 - 文字规则不能保证绝对服从，能机械检查的要求必须交给测试、验证器和 CI。

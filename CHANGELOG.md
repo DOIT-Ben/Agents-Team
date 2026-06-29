@@ -7,6 +7,8 @@
 - Add optional compatibility with installed `addyosmani/agent-skills` workflows while retaining built-in fallbacks.
 - Keep Protocol 2.0 Goal, evidence, lifecycle, diagnostics, independent QA, and fail-closed gates authoritative.
 - Add upstream design attribution and self-testable distribution tooling.
+- Add a bootstrap `push` gate that resolves an open PR before the workflow exists on the default branch.
+- Preserve locally modified generated files and the existing `AGENTS.md` managed block by stored hashes.
 
 ## 0.2.0 - 2026-06-30
 

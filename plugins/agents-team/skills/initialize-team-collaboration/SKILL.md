@@ -22,6 +22,7 @@ Never write project files before showing a dry-run preview and receiving 用户�
    `python3 ../../scripts/initialize_project.py <repo> --apply`
 6. Validate with `python3 ../../scripts/validate_project.py <repo>`.
 7. Deliver changes on a new branch and Draft PR. Never push the default branch directly.
+8. Run the bootstrap gate before merge. Because a new `pull_request` workflow is not yet on the 默认分支, push one commit after the 开放 PR exists. The generated `push` gate must resolve that branch to its PR and validate the same Issue, current-head evidence, and QA contract. Missing PR lookup or token is blocking.
 
 Initialization supports new projects and existing-project adoption. Existing `AGENTS.md` content outside the managed block must remain byte-for-byte intact. A repeated apply must be idempotent.
 
