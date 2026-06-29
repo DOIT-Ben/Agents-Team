@@ -1,18 +1,13 @@
 #!/usr/bin/env python3
-"""Build a deterministic marketplace ZIP for agents-team."""
-
+"""Build a deterministic ZIP for agents-team."""
 from __future__ import annotations
-
 import argparse
 import zipfile
 from pathlib import Path
-
-
 ROOT = Path(__file__).resolve().parents[1]
 EXCLUDED_PARTS = {".git", "dist", "__pycache__", ".pytest_cache"}
 EXCLUDED_SUFFIXES = {".pyc", ".pyo"}
-INCLUDED_ROOTS = [".agents", "plugins", "docs", "README.md", "CHANGELOG.md", "LICENSE"]
-
+INCLUDED_ROOTS = [".agents", "plugins", "docs", "tools", "README.md", "CHANGELOG.md", "LICENSE"]
 
 def iter_files():
     for item in INCLUDED_ROOTS:
@@ -25,9 +20,8 @@ def iter_files():
                 if child.is_file() and not (set(relative.parts) & EXCLUDED_PARTS) and child.suffix not in EXCLUDED_SUFFIXES:
                     yield child
 
-
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Build the Codex plugin marketplace archive.")
+    parser = argparse.ArgumentParser(description="Build the package archive.")
     parser.add_argument("--output", type=Path, default=ROOT / "dist/agents-team-0.1.0.zip")
     args = parser.parse_args()
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -39,7 +33,6 @@ def main() -> int:
             archive.writestr(info, path.read_bytes())
     print(args.output)
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())
