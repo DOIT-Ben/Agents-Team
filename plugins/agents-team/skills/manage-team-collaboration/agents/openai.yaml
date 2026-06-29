@@ -1,0 +1,4 @@
+interface:
+  display_name: "管理团队协作机制"
+  short_description: "Check upgrade repair or remove project workflow"
+  default_prompt: "检查当前项目团队协作机制，并按需升级、修复或移除。"

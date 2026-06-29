@@ -1,0 +1,4 @@
+interface:
+  display_name: "初始化团队协作机制"
+  short_description: "Initialize reusable project collaboration safely"
+  default_prompt: "初始化当前项目的团队协作机制，必须先预览并等待确认。"

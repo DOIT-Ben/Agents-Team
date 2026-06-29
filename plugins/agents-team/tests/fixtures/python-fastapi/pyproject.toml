@@ -1,0 +1,6 @@
+[project]
+name = "fixture-fastapi"
+version = "0.0.0"
+
+[project.optional-dependencies]
+test = ["pytest"]

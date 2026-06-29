@@ -1,0 +1,4 @@
+interface:
+  display_name: "执行团队目标"
+  short_description: "Execute a scoped Goal with project gates"
+  default_prompt: "按照团队协作机制执行指定 Goal，严格遵守必须完成、验收门禁和任务边界。"
