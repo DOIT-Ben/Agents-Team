@@ -1,6 +1,6 @@
 <div align="center">
 
-![Agents-Team hero](docs/assets/agents-team-hero.jpg)
+<img src="./docs/assets/agents-team-hero-v2.jpg" alt="Agents-Team collaboration workflow" width="100%">
 
 # Agents-Team
 
