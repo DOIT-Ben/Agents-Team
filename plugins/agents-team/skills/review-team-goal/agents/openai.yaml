@@ -1,0 +1,4 @@
+interface:
+  display_name: "审查团队目标"
+  short_description: "Review correctness, evidence, security, and scope"
+  default_prompt: "按照 Agents-Team 合同审查当前最终差异，先列问题，再给 PASS、FAIL 或 BLOCKED。"

@@ -1,0 +1,4 @@
+interface:
+  display_name: "构建团队目标"
+  short_description: "Implement one bounded task with test-first evidence"
+  default_prompt: "按照 Agents-Team 文件边界和测试先行要求实现当前任务，只报告代码级完成。"

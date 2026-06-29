@@ -23,6 +23,10 @@ class DistributionTests(unittest.TestCase):
                 names = set(archive.namelist())
             self.assertIn(".agents/plugins/marketplace.json", names)
             self.assertIn("plugins/agents-team/.codex-plugin/plugin.json", names)
+            self.assertIn("plugins/agents-team/skills/route-team-work/SKILL.md", names)
+            self.assertIn("plugins/agents-team/references/roles/independent-verifier.md", names)
+            self.assertIn("tools/verify_distribution.py", names)
+            self.assertIn("NOTICE.md", names)
             self.assertNotIn("plugins/agents-team/tests/__pycache__", "\n".join(names))
 
 

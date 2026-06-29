@@ -24,6 +24,20 @@ L2/L3 Issue 必须依次包含 Goal、必须完成、验收门禁、任务边界
 
 L3 涉及数据、核心契约、权限、密钥、费用、真实 Provider 或生产环境，实施前必须暂停并请求用户确认。
 
+### 工程生命周期
+
+`execute-team-goal` 会先调用 `route-team-work`，再根据当前状态选择：
+
+```text
+plan-team-goal -> build-team-goal -> review-team-goal -> ship-team-goal
+                         |
+                         -> debug-team-goal
+```
+
+每个工作角色只承担一种职责。主 Codex 是唯一整合者；角色不得继续调用其他角色，实现者不得签发独立 QA。
+
+检测到兼容的外部工程 Skill 时可以选择使用，但 Agents-Team Protocol 2.0 始终优先。没有外部 Skill 时自动使用内置流程，不影响安装和执行。
+
 ## 独立验收
 
 > 在未参与实现的全新上下文中独立验收 PR #45，只依据 Issue、最终差异和实际证据给出 PASS 或 FAIL。
@@ -47,3 +61,4 @@ python3 PLUGIN_ROOT/scripts/manage_project.py remove /path/to/project
 - GitHub 分支保护属于仓库设置，必须由有权限的用户或连接器配置。
 - 自动扫描结果需要 Codex 判断；不能可靠识别的构建和测试命令必须询问用户。
 - Plugin 不承诺单靠文字规则实现绝对服从；可机械约束由项目验证器和 CI 承担。
+- Codex Plugin 不原生发现 Claude Code 风格的根目录 `agents/`；角色契约位于 `references/roles/`，由主 Skill 显式加载。

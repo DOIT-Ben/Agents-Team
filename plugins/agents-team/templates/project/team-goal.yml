@@ -43,6 +43,13 @@ body:
     id: dependencies
     attributes:
       label: 依赖与阻塞条件
-      description: 没有则填写“无”。
+      description: 写明环境、权限、数据和外部服务条件；没有外部依赖时说明可在何种本地条件下执行。
+    validations:
+      required: true
+  - type: textarea
+    id: failure_rollback
+    attributes:
+      label: 失败处理与回滚
+      description: 写明失败证据如何保留、何时停止以及如何恢复到安全状态。
     validations:
       required: true

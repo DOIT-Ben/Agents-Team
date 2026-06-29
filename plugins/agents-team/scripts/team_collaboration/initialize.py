@@ -25,6 +25,7 @@ TEMPLATE_TARGETS = {
     "team-collaboration.schema.json": ".codex/schemas/team-collaboration.schema.json",
     "validate_team_collaboration.py": ".codex/scripts/validate_team_collaboration.py",
     "validate_pr_contract.py": ".codex/scripts/validate_pr_contract.py",
+    "doctor_team_collaboration.py": ".codex/scripts/doctor_team_collaboration.py",
     "team-goal.yml": ".github/ISSUE_TEMPLATE/team-goal.yml",
     "critical-goal.yml": ".github/ISSUE_TEMPLATE/critical-goal.yml",
     "pull_request_template.md": ".github/pull_request_template.md",
@@ -88,27 +89,28 @@ def _default_branch(root: Path) -> str:
     return result.stdout.strip() or "main"
 
 
-def _existing_config(root: Path) -> dict[str, Any]:
+def _existing_mechanism(root: Path) -> dict[str, Any]:
     path = root / ".codex" / "team-collaboration.json"
     if not path.is_file():
         return {}
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-        return data if isinstance(data, dict) else {}
-    except (OSError, json.JSONDecodeError, TypeError):
+        mechanism = json.loads(path.read_text(encoding="utf-8"))["mechanism"]
+        return mechanism if isinstance(mechanism, dict) else {}
+    except (OSError, json.JSONDecodeError, KeyError, TypeError):
         return {}
-
-
-def _existing_mechanism(root: Path) -> dict[str, Any]:
-    mechanism = _existing_config(root).get("mechanism")
-    return mechanism if isinstance(mechanism, dict) else {}
 
 
 def _existing_managed_hashes(root: Path) -> dict[str, str]:
-    managed = _existing_config(root).get("managedFiles")
+    path = root / ".codex" / "team-collaboration.json"
+    if not path.is_file():
+        return {}
+    try:
+        managed = json.loads(path.read_text(encoding="utf-8"))["managedFiles"]
+    except (OSError, json.JSONDecodeError, KeyError, TypeError):
+        return {}
     if not isinstance(managed, dict):
         return {}
-    return {str(key): str(value) for key, value in managed.items() if isinstance(value, str)}
+    return {key: value for key, value in managed.items() if isinstance(key, str) and isinstance(value, str)}
 
 
 def _build_config(root: Path, profile: dict[str, Any], managed: dict[str, str]) -> dict[str, Any]:
@@ -135,6 +137,13 @@ def _build_config(root: Path, profile: dict[str, Any], managed: dict[str, str]) 
         "paths": profile["paths"],
         "risk": {"criticalPaths": [], "protectedFiles": [], "productionPaths": [], "realProviderPaths": []},
         "overrides": {"requireIssueForL1": False, "requireRealSmokeForRelease": True},
+        "enforcement": {
+            "mode": "strict",
+            "failClosedRisks": ["L2", "L3"],
+            "requireLinkedIssue": {"L1": False, "L2": True, "L3": True},
+            "requireIndependentQA": {"L1": False, "L2": True, "L3": True},
+            "requireFailureRecord": True,
+        },
         "managedFiles": managed,
     }
 
@@ -151,6 +160,11 @@ def initialize_project(root: Path, plugin_root: Path, *, apply: bool = False, al
         _assert_no_symlink_path(root, target)
     agents_content = (template_root / "agents-managed-block.md").read_text(encoding="utf-8")
     existing_agents = (root / "AGENTS.md").read_text(encoding="utf-8") if (root / "AGENTS.md").is_file() else ""
+    existing_managed = _existing_managed_hashes(root)
+    if "TEAM-COLLABORATION:START" in existing_agents:
+        current_block = extract_agents_block(existing_agents).encode("utf-8")
+        if existing_managed.get("AGENTS.md#TEAM-COLLABORATION") != _sha256(current_block):
+            raise InitializationError("existing AGENTS.md collaboration block was locally modified")
     rendered_agents = merge_agents_block(existing_agents, agents_content, PROTOCOL_VERSION).encode("utf-8")
 
     rendered: dict[str, bytes] = {"AGENTS.md": rendered_agents}
@@ -159,11 +173,8 @@ def initialize_project(root: Path, plugin_root: Path, *, apply: bool = False, al
         destination = root / target
         if destination.exists() and destination.read_bytes() != data:
             current_hash = _sha256(destination.read_bytes())
-            expected_hash = _existing_managed_hashes(root).get(target)
-            if current_hash != expected_hash:
-                raise InitializationError(
-                    f"existing target has local or unmanaged changes; refusing to overwrite: {target}"
-                )
+            if existing_managed.get(target) != current_hash:
+                raise InitializationError(f"existing unmanaged or locally modified target would be overwritten: {target}")
         rendered[target] = data
 
     managed = {target: _sha256(data) for target, data in sorted(rendered.items()) if target != "AGENTS.md"}

@@ -17,5 +17,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate team collaboration project adapter
         run: python .codex/scripts/validate_team_collaboration.py .
-      - name: Validate PR and linked Issue contract
-        run: python .codex/scripts/validate_pr_contract.py --event "$GITHUB_EVENT_PATH" --require-issue-lookup
+      - name: Validate PR, linked Issue, and current-head evidence
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python .codex/scripts/validate_pr_contract.py --event "$GITHUB_EVENT_PATH"

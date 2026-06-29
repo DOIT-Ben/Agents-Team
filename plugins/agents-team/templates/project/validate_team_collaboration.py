@@ -11,6 +11,8 @@ from pathlib import Path
 REQUIRED = [
     "AGENTS.md",
     ".codex/team-collaboration.json",
+    ".codex/scripts/validate_pr_contract.py",
+    ".codex/scripts/doctor_team_collaboration.py",
     ".github/ISSUE_TEMPLATE/team-goal.yml",
     ".github/ISSUE_TEMPLATE/critical-goal.yml",
     ".github/pull_request_template.md",

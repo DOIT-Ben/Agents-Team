@@ -28,6 +28,13 @@ body:
       label: 任务边界
     validations:
       required: true
+  - type: dropdown
+    id: risk
+    attributes:
+      label: 风险等级
+      options: ["L3"]
+    validations:
+      required: true
   - type: textarea
     id: decision
     attributes:
@@ -39,5 +46,12 @@ body:
     id: dependencies
     attributes:
       label: 依赖与阻塞条件
+    validations:
+      required: true
+  - type: textarea
+    id: failure_rollback
+    attributes:
+      label: 失败处理与回滚
+      description: 记录失败停止条件、证据保留、回滚步骤和回滚后的验证。
     validations:
       required: true

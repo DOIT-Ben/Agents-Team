@@ -44,8 +44,29 @@ class VersioningTests(unittest.TestCase):
             config_path.write_text(json.dumps(config, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             manage_project(root, PLUGIN_ROOT, "upgrade", apply=True)
             upgraded = json.loads(config_path.read_text(encoding="utf-8"))
-            self.assertEqual(upgraded["mechanism"]["protocolVersion"], "1.0.0")
+            self.assertEqual(upgraded["mechanism"]["protocolVersion"], "2.0.0")
+            self.assertEqual(upgraded["mechanism"]["configSchemaVersion"], 2)
+            self.assertEqual(upgraded["enforcement"]["mode"], "strict")
             self.assertIsNotNone(upgraded["mechanism"]["lastUpgradedAt"])
+
+    def test_upgrade_migrates_v1_configuration_to_strict_v2(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            subprocess.run(["git", "init", "-q", "-b", "main"], cwd=root, check=True)
+            initialize_project(root, PLUGIN_ROOT, apply=True)
+            path = root / ".codex/team-collaboration.json"
+            config = json.loads(path.read_text(encoding="utf-8"))
+            config["mechanism"]["pluginVersion"] = "0.1.0"
+            config["mechanism"]["protocolVersion"] = "1.0.0"
+            config["mechanism"]["configSchemaVersion"] = 1
+            config.pop("enforcement", None)
+            path.write_text(json.dumps(config, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            preview = manage_project(root, PLUGIN_ROOT, "upgrade", apply=False)
+            self.assertEqual(preview["status"], "preview")
+            manage_project(root, PLUGIN_ROOT, "upgrade", apply=True)
+            migrated = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(migrated["mechanism"]["protocolVersion"], "2.0.0")
+            self.assertIn("enforcement", migrated)
 
     def test_upgrade_refuses_locally_modified_managed_file(self):
         with tempfile.TemporaryDirectory() as temp:

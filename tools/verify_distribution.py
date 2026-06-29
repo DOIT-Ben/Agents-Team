@@ -28,7 +28,6 @@ def main() -> int:
         project = root / "project"
         with zipfile.ZipFile(args.archive) as source:
             source.extractall(package)
-        run(["python3", "-m", "unittest", "discover", "-s", "plugins/agents-team/tests", "-v"], package)
         project.mkdir()
         (project / "pyproject.toml").write_text('[project]\nname="e2e"\nversion="0.0.0"\n', encoding="utf-8")
         (project / "tests").mkdir()
@@ -38,6 +37,10 @@ def main() -> int:
         run(["git", "add", "."], project)
         run(["git", "commit", "-q", "-m", "fixture"], project)
         plugin = package / "plugins" / "agents-team"
+        package_tests = run(
+            ["python3", "-m", "unittest", "discover", "-s", "plugins/agents-team/tests", "-v"],
+            package,
+        )
         init_result = run(["python3", str(plugin / "scripts/initialize_project.py"), str(project), "--apply"])
         validation = run(["python3", str(project / ".codex/scripts/validate_team_collaboration.py"), str(project)])
         manifest = json.loads((plugin / ".codex-plugin/plugin.json").read_text(encoding="utf-8"))
@@ -45,6 +48,7 @@ def main() -> int:
             "status": "valid",
             "plugin": manifest["name"],
             "version": manifest["version"],
+            "packageTests": "passed" if package_tests.returncode == 0 else "failed",
             "initialization": json.loads(init_result.stdout)["status"],
             "projectValidation": validation.stdout.strip(),
         }, ensure_ascii=False, indent=2))
