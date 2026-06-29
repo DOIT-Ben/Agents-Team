@@ -28,6 +28,7 @@ def main() -> int:
         project = root / "project"
         with zipfile.ZipFile(args.archive) as source:
             source.extractall(package)
+        run(["python3", "-m", "unittest", "discover", "-s", "plugins/agents-team/tests", "-v"], package)
         project.mkdir()
         (project / "pyproject.toml").write_text('[project]\nname="e2e"\nversion="0.0.0"\n', encoding="utf-8")
         (project / "tests").mkdir()
