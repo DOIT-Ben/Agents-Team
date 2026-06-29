@@ -45,7 +45,7 @@ class TemplateContractTests(unittest.TestCase):
         workflow = (TEMPLATES / "collaboration-gate.yml").read_text(encoding="utf-8")
         for phrase in [
             "push:", "pull-requests: read", "issues: read", "validate_pr_contract.py",
-            "GITHUB_EVENT_PATH", "github.event.repository.default_branch",
+            "GITHUB_EVENT_PATH", "github.event.repository.default_branch", "edited", "ready_for_review",
         ]:
             self.assertIn(phrase, workflow)
 

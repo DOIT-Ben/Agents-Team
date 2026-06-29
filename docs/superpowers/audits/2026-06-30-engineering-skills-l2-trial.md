@@ -28,6 +28,8 @@ The ready PR and a subsequent head commit produced no workflow run. GitHub only 
 
 The generated gate now also listens to non-default branch `push` events. On push it uses `GITHUB_TOKEN` to resolve exactly one open PR for the branch and applies the same linked Issue, current-head evidence, timestamp, artifact, and independent QA checks. Missing permissions or ambiguous PR lookup fail closed.
 
+The first failed run also showed that corrected PR evidence needs a trigger that does not change the head SHA. The workflow now listens to `edited` and `ready_for_review`, allowing a PR body correction to re-run validation against the same commit instead of making its own `commitSha` stale.
+
 ## Pending remote proof
 
 The updated bootstrap workflow must be copied to the trial branch and exercised twice:

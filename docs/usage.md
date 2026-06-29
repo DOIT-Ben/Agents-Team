@@ -27,6 +27,7 @@ GitHub 的 `pull_request` workflow 在文件尚未进入默认分支时不会触
 5. 缺少 PR、Token、权限或唯一匹配时一律失败，不得降级通过。
 
 默认分支上的 push 只运行项目适配器校验，不执行 PR 反查。bootstrap Gate 通过后才可考虑合并初始化 PR。
+修正 PR 正文证据时不需要制造新提交；`edited` 事件会针对同一 head SHA 重新执行门禁，避免证据刚写入就因新提交失效。
 
 ## 执行 Goal
 
