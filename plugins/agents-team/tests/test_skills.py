@@ -4,6 +4,14 @@ from pathlib import Path
 
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
+ENGINEERING_SKILLS = {
+    "route-team-work",
+    "plan-team-goal",
+    "build-team-goal",
+    "debug-team-goal",
+    "review-team-goal",
+    "ship-team-goal",
+}
 
 
 class SkillContractTests(unittest.TestCase):
@@ -14,6 +22,14 @@ class SkillContractTests(unittest.TestCase):
             description = re.search(r"^description:\s*(.+)$", text, re.MULTILINE)
             self.assertIsNotNone(description, path.as_posix())
             self.assertTrue(description.group(1).startswith("Use when "), path.as_posix())
+
+    def test_engineering_skills_have_complete_workflow_contracts(self):
+        for name in sorted(ENGINEERING_SKILLS):
+            root = PLUGIN_ROOT / "skills" / name
+            text = (root / "SKILL.md").read_text(encoding="utf-8")
+            self.assertTrue((root / "agents" / "openai.yaml").is_file(), name)
+            for heading in ["## Entry Gate", "## Workflow", "## Forbidden", "## Exit Gate", "## Evidence"]:
+                self.assertIn(heading, text, name)
 
     def test_initialize_skill_requires_preview_and_confirmation(self):
         text = (PLUGIN_ROOT / "skills/initialize-team-collaboration/SKILL.md").read_text(encoding="utf-8")

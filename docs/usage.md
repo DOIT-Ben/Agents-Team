@@ -16,6 +16,19 @@ python3 PLUGIN_ROOT/scripts/initialize_project.py /path/to/project --apply
 python3 PLUGIN_ROOT/scripts/validate_project.py /path/to/project
 ```
 
+### 首次安装 bootstrap
+
+初始化后的首次 PR 必须按以下顺序执行：
+
+1. 从完整仓库检出创建初始化分支，保留既有 `AGENTS.md` 和项目规则。
+2. 创建完整 Goal Issue 和 Draft PR。
+3. 将 PR 转为 Ready 后，再向同一分支推送一个经过审查的提交。
+4. `synchronize` 事件核对 Issue、当前 head SHA、证据和独立 QA。
+5. 缺少 Token、Issue 权限或证据时一律失败，不得降级通过。
+
+bootstrap Gate 通过后才可考虑合并初始化 PR。
+修正 PR 正文证据时不需要制造新提交；`edited` 事件会针对同一 head SHA 重新执行门禁，避免证据刚写入就因新提交失效。
+
 ## 执行 Goal
 
 L2/L3 Issue 必须依次包含 Goal、必须完成、验收门禁、任务边界、风险等级、依赖与阻塞条件。
@@ -23,6 +36,20 @@ L2/L3 Issue 必须依次包含 Goal、必须完成、验收门禁、任务边界
 > 按照 Issue #123 执行团队目标。严格实现 Goal，完成全部必须完成项，通过验收门禁，严禁突破任务边界；不满足条件不得宣布完成。
 
 L3 涉及数据、核心契约、权限、密钥、费用、真实 Provider 或生产环境，实施前必须暂停并请求用户确认。
+
+### 工程生命周期
+
+`execute-team-goal` 会先调用 `route-team-work`，再根据当前状态选择：
+
+```text
+plan-team-goal -> build-team-goal -> review-team-goal -> ship-team-goal
+                         |
+                         -> debug-team-goal
+```
+
+每个工作角色只承担一种职责。主 Codex 是唯一整合者；角色不得继续调用其他角色，实现者不得签发独立 QA。
+
+检测到兼容的外部工程 Skill 时可以选择使用，但 Agents-Team Protocol 2.0 始终优先。没有外部 Skill 时自动使用内置流程，不影响安装和执行。
 
 ## 独立验收
 
@@ -44,6 +71,8 @@ python3 PLUGIN_ROOT/scripts/manage_project.py remove /path/to/project
 ## 已知边界
 
 - Plugin 不自动创建 GitHub 仓库。
+- 首次初始化必须从完整检出执行；对空目录或不完整投影执行初始化无法证明既有文件未被覆盖。
 - GitHub 分支保护属于仓库设置，必须由有权限的用户或连接器配置。
 - 自动扫描结果需要 Codex 判断；不能可靠识别的构建和测试命令必须询问用户。
 - Plugin 不承诺单靠文字规则实现绝对服从；可机械约束由项目验证器和 CI 承担。
+- Codex Plugin 不原生发现 Claude Code 风格的根目录 `agents/`；角色契约位于 `references/roles/`，由主 Skill 显式加载。

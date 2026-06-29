@@ -1,0 +1,4 @@
+interface:
+  display_name: "规划团队目标"
+  short_description: "Break a Goal into bounded, verifiable tasks"
+  default_prompt: "按照 Agents-Team 协议规划当前 Goal，明确依赖、文件边界和验收证据，不修改业务代码。"

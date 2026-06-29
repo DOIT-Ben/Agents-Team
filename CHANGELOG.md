@@ -1,11 +1,19 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 - 2026-06-30
 
-- Make distribution archives self-testable by including repository tooling in the package.
-- Add generated PR contract validator for evidence completeness checks.
-- Prevent initialization from overwriting locally modified generated templates unless their stored managed hash still matches.
-- Strengthen local tests for PR contract validation, local template drift, and distribution verification.
+- Add deterministic plan, build, debug, review, and ship routing.
+- Add six self-contained engineering lifecycle Skills and six bounded role contracts.
+- Add optional compatibility with installed `addyosmani/agent-skills` workflows while retaining built-in fallbacks.
+- Keep Protocol 2.0 Goal, evidence, lifecycle, diagnostics, independent QA, and fail-closed gates authoritative.
+- Add upstream design attribution and self-testable distribution tooling.
+- Add explicit bootstrap PR triggers for synchronize, ready-for-review, and evidence edits.
+- Revalidate unchanged heads when PR evidence is edited or a Draft becomes ready.
+- Preserve locally modified generated files and the existing `AGENTS.md` managed block by stored hashes.
+
+## 0.2.0 - 2026-06-30
+
+- Add Protocol 2.0 contract, structured evidence, lifecycle, diagnostics, Doctor, strict enforcement configuration, and 1.x migration.
 
 ## 0.1.0 - 2026-06-29
 

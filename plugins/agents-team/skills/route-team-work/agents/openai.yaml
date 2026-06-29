@@ -1,0 +1,4 @@
+interface:
+  display_name: "路由团队工作"
+  short_description: "Select the engineering phase, role, and workflow"
+  default_prompt: "按照 Agents-Team 协议判断当前 Goal 阶段、角色、能力提供者和并行条件，不修改业务代码。"

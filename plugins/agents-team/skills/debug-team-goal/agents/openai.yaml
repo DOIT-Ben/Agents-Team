@@ -1,0 +1,4 @@
+interface:
+  display_name: "调试团队目标"
+  short_description: "Reproduce, localize, fix, and guard a failure"
+  default_prompt: "按照 Agents-Team 失败记录和系统调试流程定位当前问题，先复现再修复。"

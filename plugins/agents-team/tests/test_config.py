@@ -15,9 +15,9 @@ def valid_config():
     return {
         "mechanism": {
             "id": "agents-team",
-            "pluginVersion": "0.1.0",
-            "protocolVersion": "1.0.0",
-            "configSchemaVersion": 1,
+            "pluginVersion": "0.3.0",
+            "protocolVersion": "2.0.0",
+            "configSchemaVersion": 2,
             "initializedAt": "2026-06-29T00:00:00Z",
             "lastUpgradedAt": None,
         },
@@ -31,6 +31,13 @@ def valid_config():
         "paths": {"frontend": [], "backend": ["src"], "database": [], "deployment": [], "tests": ["tests"]},
         "risk": {"criticalPaths": [], "protectedFiles": [], "productionPaths": [], "realProviderPaths": []},
         "overrides": {"requireIssueForL1": False, "requireRealSmokeForRelease": True},
+        "enforcement": {
+            "mode": "strict",
+            "failClosedRisks": ["L2", "L3"],
+            "requireLinkedIssue": {"L1": False, "L2": True, "L3": True},
+            "requireIndependentQA": {"L1": False, "L2": True, "L3": True},
+            "requireFailureRecord": True,
+        },
         "managedFiles": {},
     }
 
@@ -53,6 +60,21 @@ class ConfigTests(unittest.TestCase):
         config = valid_config()
         config["risk"]["criticalPaths"] = ["../outside"]
         self.assertIn("risk.criticalPaths contains unsafe path: ../outside", validate_config(config))
+
+    def test_enforcement_section_is_required(self):
+        config = valid_config()
+        del config["enforcement"]
+        self.assertIn("enforcement is required", validate_config(config))
+
+    def test_fail_closed_risks_reject_unknown_values(self):
+        config = valid_config()
+        config["enforcement"]["failClosedRisks"] = ["L4"]
+        self.assertIn("enforcement.failClosedRisks must contain only L1, L2, L3", validate_config(config))
+
+    def test_enforcement_mode_must_be_strict_or_advisory(self):
+        config = valid_config()
+        config["enforcement"]["mode"] = "sometimes"
+        self.assertIn("enforcement.mode must be strict or advisory", validate_config(config))
 
     def test_load_config_raises_with_all_validation_errors(self):
         with tempfile.TemporaryDirectory() as temp:

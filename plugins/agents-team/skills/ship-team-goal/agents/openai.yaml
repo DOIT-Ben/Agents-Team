@@ -1,0 +1,4 @@
+interface:
+  display_name: "交付团队目标"
+  short_description: "Verify current-head evidence before merge or release"
+  default_prompt: "按照 Agents-Team 当前提交、CI、独立 QA、风险和回滚门禁判断是否可交付。"

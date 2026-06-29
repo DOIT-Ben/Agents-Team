@@ -32,7 +32,7 @@ def validate_config(config: Any) -> list[str]:
     if not isinstance(config, dict):
         return ["configuration must be an object"]
 
-    required_sections = ["mechanism", "project", "commands", "paths", "risk", "overrides", "managedFiles"]
+    required_sections = ["mechanism", "project", "commands", "paths", "risk", "overrides", "enforcement", "managedFiles"]
     for section in required_sections:
         if section not in config:
             errors.append(f"{section} is required")
@@ -68,6 +68,17 @@ def validate_config(config: Any) -> list[str]:
 
     if "managedFiles" in config and not isinstance(config["managedFiles"], dict):
         errors.append("managedFiles must be an object")
+
+    enforcement = config.get("enforcement")
+    if isinstance(enforcement, dict):
+        if enforcement.get("mode") not in {"strict", "advisory"}:
+            errors.append("enforcement.mode must be strict or advisory")
+        fail_closed = enforcement.get("failClosedRisks")
+        if (
+            not isinstance(fail_closed, list)
+            or any(value not in {"L1", "L2", "L3"} for value in fail_closed)
+        ):
+            errors.append("enforcement.failClosedRisks must contain only L1, L2, L3")
 
     return errors
 

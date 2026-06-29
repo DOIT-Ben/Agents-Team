@@ -73,6 +73,37 @@ class InitializeProjectTests(unittest.TestCase):
                 initialize_project(root, PLUGIN_ROOT, apply=True, allow_dirty=True)
             self.assertEqual(target.read_text(encoding="utf-8"), "custom template")
 
+    def test_locally_modified_managed_target_is_not_overwritten(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            init_git(root)
+            initialize_project(root, PLUGIN_ROOT, apply=True)
+            target = root / ".github" / "pull_request_template.md"
+            custom = target.read_text(encoding="utf-8") + "\nLocal policy override.\n"
+            target.write_text(custom, encoding="utf-8")
+
+            with self.assertRaises(InitializationError):
+                initialize_project(root, PLUGIN_ROOT, apply=True, allow_dirty=True)
+
+            self.assertEqual(target.read_text(encoding="utf-8"), custom)
+
+    def test_locally_modified_agents_block_is_not_overwritten(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            init_git(root)
+            initialize_project(root, PLUGIN_ROOT, apply=True)
+            target = root / "AGENTS.md"
+            custom = target.read_text(encoding="utf-8").replace(
+                "- 所有正式任务必须先有清晰、可观察的 Goal。",
+                "- 所有正式任务必须先有清晰、可观察的 Goal。\n- Local policy override.",
+            )
+            target.write_text(custom, encoding="utf-8")
+
+            with self.assertRaises(InitializationError):
+                initialize_project(root, PLUGIN_ROOT, apply=True, allow_dirty=True)
+
+            self.assertEqual(target.read_text(encoding="utf-8"), custom)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -6,8 +6,8 @@
 
 **让 Codex 不只是“写代码”，而是围绕目标持续推进、接受验收、完成交付。**
 
-[![Release](https://img.shields.io/badge/release-0.1.0-ff5c5c?style=flat-square)](CHANGELOG.md)
-[![Tests](https://img.shields.io/badge/tests-44%20passing-19c37d?style=flat-square)](#开发与验证)
+[![Release](https://img.shields.io/badge/release-0.3.0-ff5c5c?style=flat-square)](CHANGELOG.md)
+[![Tests](https://img.shields.io/badge/tests-verified-19c37d?style=flat-square)](#开发与验证)
 [![Codex Plugin](https://img.shields.io/badge/Codex-Plugin-19a7ce?style=flat-square)](plugins/agents-team)
 [![GitHub first](https://img.shields.io/badge/workflow-GitHub%20first-181717?style=flat-square)](#一条完整的交付链路)
 
@@ -75,7 +75,7 @@ Pull Request 汇总最终差异
 
 这套分级解决的是一个实际矛盾：全部询问会把自动化拖死，全部放权又会把风险藏进提交里。
 
-## 四个核心能力
+## 治理核心与工程能力
 
 | Skill | 作用 |
 | --- | --- |
@@ -83,6 +83,19 @@ Pull Request 汇总最终差异
 | `execute-team-goal` | 按 Goal、风险等级和任务边界执行正式任务 |
 | `verify-team-goal` | 在独立上下文中基于证据给出 PASS 或 FAIL |
 | `manage-team-collaboration` | 检查漂移、升级、修复或移除机制 |
+
+执行 Goal 时，路由层会根据生命周期和失败状态选择六项内置工程能力：
+
+| Skill | 作用 |
+| --- | --- |
+| `route-team-work` | 选择阶段、角色、能力提供者和并行策略 |
+| `plan-team-goal` | 拆解依赖明确、可独立验证的任务 |
+| `build-team-goal` | 在文件边界内测试先行、增量实现 |
+| `debug-team-goal` | 复现、定位、修复并留下回归证据 |
+| `review-team-goal` | 审查正确性、测试、安全和范围偏差 |
+| `ship-team-goal` | 核对当前提交、CI、独立 QA、风险与回滚 |
+
+如果当前环境已经安装兼容的 `addyosmani/agent-skills`，Agents-Team 可以选择对应工程 Skill；没有安装时始终使用内置能力。外部 Skill 不能绕过 Goal、风险、任务边界、独立 QA 或 CI 门禁。
 
 初始化后，项目会得到项目级 `AGENTS.md` 规则、`.codex/team-collaboration.json` 配置、Issue/PR 模板、验证脚本和可选 CI 门禁。已有文件不会被静默覆盖。
 
@@ -101,6 +114,8 @@ codex plugin marketplace add DOIT-Ben/Agents-Team --ref master
 ```
 
 初始化默认只做 **dry-run**。Codex 会先展示识别到的技术栈、测试命令、准备新增或修改的文件、冲突和未知项；只有你明确确认后才真正写入。
+
+首次安装有一个明确的 bootstrap 步骤：先创建 Draft PR，再向该分支推送一个经过审查的提交，由 `synchronize` 事件验证 Issue、当前 head 证据和 QA 契约。修正 PR 正文时由 `edited` 事件针对同一 head 复验，不需要制造新提交。
 
 ### 本地安装
 
@@ -126,6 +141,7 @@ codex plugin marketplace add /absolute/path/to/Agents-Team
 
 - 初始化、升级、修复和移除都先预览，写入必须获得明确确认。
 - 不覆盖已有 `AGENTS.md`、GitHub 模板或业务 CI。
+- 初始化必须基于完整仓库检出；禁止用缺少既有文件的空投影生成适配器。
 - Hook 只做只读状态检测，不执行项目命令，也不修改仓库。
 - 没有真正独立的验收上下文，就不能伪造“独立 QA”。
 - 文字规则不能保证绝对服从，能机械检查的要求必须交给测试、验证器和 CI。
@@ -155,10 +171,10 @@ python3 -m unittest discover -s tests -v
 
 cd ../..
 python3 tools/build_distribution.py
-python3 tools/verify_distribution.py dist/agents-team-0.1.0.zip
+python3 tools/verify_distribution.py dist/agents-team-0.3.0.zip
 ```
 
-当前测试覆盖 Python、Next.js、.NET、Monorepo、既有 `AGENTS.md` 和既有 CI 等初始化场景，并检查路径穿越、符号链接和分发包完整性。
+当前测试覆盖 Python、Next.js、.NET、Monorepo、既有 `AGENTS.md` 和既有 CI 等初始化场景，并检查合同、证据、生命周期、路由、角色边界、路径穿越、符号链接和分发包完整性。
 
 ## 边界
 
