@@ -1,0 +1,25 @@
+name: 漏检问题
+description: 独立审查没有发现后来确认的缺陷
+title: "[漏检] "
+labels: ["feedback:missed-defect", "status:new"]
+body:
+  - type: input
+    id: run_id
+    attributes: {label: run_id}
+    validations: {required: true}
+  - type: input
+    id: agents_team_version
+    attributes: {label: agents_team_version}
+    validations: {required: true}
+  - type: textarea
+    id: reproduction
+    attributes: {label: reproduction, description: 能证明漏检的最小测试或行为步骤}
+    validations: {required: true}
+  - type: textarea
+    id: escaped_defect
+    attributes: {label: 逃逸缺陷与影响}
+    validations: {required: true}
+  - type: textarea
+    id: qa_evidence
+    attributes: {label: 当时的独立 QA 证据, description: 仅提供脱敏摘要}
+    validations: {required: true}

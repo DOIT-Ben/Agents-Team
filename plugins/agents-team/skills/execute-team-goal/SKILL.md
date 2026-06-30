@@ -11,15 +11,17 @@ Read `AGENTS.md`, `.codex/team-collaboration.json`, the linked Issue, lifecycle 
 
 ## Workflow
 
-1. Validate the Goal and reclassify L1/L2/L3 using `../../references/risk-classification.md`.
-2. For L3, present approach, alternatives, cost, risk, evidence, and rollback; wait for user approval.
-3. Invoke `route-team-work` to select phase, built-in or compatible provider, and one role.
-4. Load the selected contract from `../../references/roles/`. Give the worker the Issue, explicit `allowed files`, explicit `forbidden files`, dependencies, and exit gate.
-5. Parallelize only when tasks, files, contracts, and tests are all independent. Follow `../../references/orchestration-rules.md`.
-6. Workers may claim only their assigned code-level result. They cannot claim independent QA or whole-Goal completion.
-7. Integration authority is strict: only the main Codex integrates results, inspects the final diff, checks every 必须完成 item, runs the specified gates, and rejects out-of-bound changes.
-8. Update the PR with current-head evidence, failure records, remaining risks, and rollback.
-9. L2/L3 require 独立 QA through `verify-team-goal` in a fresh context, followed by `ship-team-goal`.
+1. Create an opaque `runId` and `traceId`, then record `goal_created` with `../../scripts/record_event.py`. Record only structured metadata described in `../../references/runtime-feedback.md`; logging failure must be reported but must not weaken or bypass the Goal contract.
+2. Validate the Goal and reclassify L1/L2/L3 using `../../references/risk-classification.md`.
+3. For L3, present approach, alternatives, cost, risk, evidence, and rollback; wait for user approval.
+4. Invoke `route-team-work` to select phase, built-in or compatible provider, and one role; record `work_dispatched` without task text or source content.
+5. Load the selected contract from `../../references/roles/`. Give the worker the Issue, explicit `allowed files`, explicit `forbidden files`, dependencies, and exit gate.
+6. Parallelize only when tasks, files, contracts, and tests are all independent. Follow `../../references/orchestration-rules.md`.
+7. Workers may claim only their assigned code-level result. They cannot claim independent QA or whole-Goal completion.
+8. Integration authority is strict: only the main Codex integrates results, inspects the final diff, checks every 必须完成 item, runs the specified gates, and rejects out-of-bound changes.
+9. Update the PR with current-head evidence, failure records, remaining risks, and rollback. Record `implementation_delivered`, `gate_blocked`, `rollback`, or `human_intervention` when those transitions occur.
+10. L2/L3 require 独立 QA through `verify-team-goal` in a fresh context. Pass only the Goal, final artifact, evidence, and opaque run identifiers; record `context_isolation_checked`, then continue to `ship-team-goal`.
+11. Record exactly one terminal `run_completed` or `run_failed` event.
 
 ## Forbidden
 

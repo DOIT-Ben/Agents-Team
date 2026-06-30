@@ -1,0 +1,25 @@
+name: 功能建议
+description: 从真实协作问题出发提出能力建议
+title: "[建议] "
+labels: ["feedback:feature", "status:new"]
+body:
+  - type: input
+    id: run_id
+    attributes: {label: run_id, description: 没有关联运行时填写 none}
+    validations: {required: true}
+  - type: input
+    id: agents_team_version
+    attributes: {label: agents_team_version}
+    validations: {required: true}
+  - type: textarea
+    id: reproduction
+    attributes: {label: reproduction, description: 目前如何遇到这个问题}
+    validations: {required: true}
+  - type: textarea
+    id: problem
+    attributes: {label: 要解决的问题与受益用户}
+    validations: {required: true}
+  - type: textarea
+    id: workflows
+    attributes: {label: 3–5 个示例工作流}
+    validations: {required: true}

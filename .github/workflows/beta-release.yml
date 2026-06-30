@@ -1,0 +1,51 @@
+name: Beta release
+
+on:
+  push:
+    tags:
+      - "v*-beta.*"
+
+permissions:
+  contents: write
+
+jobs:
+  cross-platform-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify tests
+        run: python -m unittest discover -s plugins/agents-team/tests -v
+
+  verify-and-release:
+    needs: cross-platform-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify tests
+        run: python tools/run_tests.py --output dist/test-results.json
+      - name: Build release assets
+        run: python tools/build_distribution.py --channel beta --tag "${GITHUB_REF_NAME}" --test-evidence dist/test-results.json
+      - name: Verify package
+        run: |
+          VERSION=$(python -c "import json; print(json.load(open('plugins/agents-team/.codex-plugin/plugin.json'))['version'])")
+          python tools/verify_distribution.py "dist/agents-team-${VERSION}.zip"
+      - name: Publish invited Beta prerelease
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          generate_release_notes: true
+          files: |
+            dist/agents-team-*.zip
+            dist/agents-team-*.zip.sha256
+            dist/agents-team-*.spdx.json
+            dist/agents-team-*.build.json

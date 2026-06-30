@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/DOIT-Ben/Agents-Team/schemas/beta-evaluation.schema.json",
+  "title": "Agents-Team offline Beta dataset",
+  "type": "object",
+  "required": ["invitedTesters", "effectiveTesters", "installAttempts", "installSuccesses", "upgradeAttempts", "upgradeSuccesses", "rollbackAttempts", "rollbackSuccesses", "diagnosticReports", "reproducibleReports", "openP0P1PrivacyOrDataLoss", "testerFeedback", "runs"],
+  "properties": {
+    "invitedTesters": {"type": "integer", "minimum": 0},
+    "effectiveTesters": {"type": "integer", "minimum": 0},
+    "installAttempts": {"type": "integer", "minimum": 0},
+    "installSuccesses": {"type": "integer", "minimum": 0},
+    "upgradeAttempts": {"type": "integer", "minimum": 0},
+    "upgradeSuccesses": {"type": "integer", "minimum": 0},
+    "rollbackAttempts": {"type": "integer", "minimum": 0},
+    "rollbackSuccesses": {"type": "integer", "minimum": 0},
+    "diagnosticReports": {"type": "integer", "minimum": 0},
+    "reproducibleReports": {"type": "integer", "minimum": 0},
+    "openP0P1PrivacyOrDataLoss": {"type": "integer", "minimum": 0},
+    "testerFeedback": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["cohortId", "userRating", "wouldUseAgain"],
+        "properties": {
+          "cohortId": {"type": "string"},
+          "userRating": {"type": "integer", "minimum": 1, "maximum": 5},
+          "wouldUseAgain": {"type": "boolean"}
+        }
+      }
+    },
+    "runs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["runId", "pairId", "mode", "verifiedSuccess", "defectEscaped", "firstPass", "durationSeconds", "cost"],
+        "properties": {
+          "runId": {"type": "string"},
+          "pairId": {"type": "string"},
+          "mode": {"enum": ["baseline", "agents-team"]},
+          "verifiedSuccess": {"type": "boolean"},
+          "defectEscaped": {"type": "boolean"},
+          "firstPass": {"type": "boolean"},
+          "criticalMiss": {"type": "boolean"},
+          "falseGate": {"type": "boolean"},
+          "durationSeconds": {"type": "number", "minimum": 0},
+          "cost": {"type": "number", "minimum": 0},
+          "contextIsolationViolation": {"type": "boolean"},
+          "userRating": {"type": "integer", "minimum": 1, "maximum": 5},
+          "wouldUseAgain": {"type": "boolean"}
+        }
+      }
+    }
+  }
+}

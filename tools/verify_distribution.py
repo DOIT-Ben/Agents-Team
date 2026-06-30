@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import subprocess
+import sys
 import tempfile
 import zipfile
 from pathlib import Path
@@ -22,6 +24,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Verify an Agents-Team distribution ZIP.")
     parser.add_argument("archive", type=Path)
     args = parser.parse_args()
+    checksum_path = Path(str(args.archive) + ".sha256")
+    if checksum_path.is_file():
+        expected = checksum_path.read_text(encoding="utf-8").split()[0]
+        actual = hashlib.sha256(args.archive.read_bytes()).hexdigest()
+        if actual != expected:
+            raise RuntimeError(f"archive checksum mismatch: expected {expected}, got {actual}")
     with tempfile.TemporaryDirectory() as temp:
         root = Path(temp)
         package = root / "package"
@@ -38,11 +46,11 @@ def main() -> int:
         run(["git", "commit", "-q", "-m", "fixture"], project)
         plugin = package / "plugins" / "agents-team"
         package_tests = run(
-            ["python3", "-m", "unittest", "discover", "-s", "plugins/agents-team/tests", "-v"],
+            [sys.executable, "-m", "unittest", "discover", "-s", "plugins/agents-team/tests", "-v"],
             package,
         )
-        init_result = run(["python3", str(plugin / "scripts/initialize_project.py"), str(project), "--apply"])
-        validation = run(["python3", str(project / ".codex/scripts/validate_team_collaboration.py"), str(project)])
+        init_result = run([sys.executable, str(plugin / "scripts/initialize_project.py"), str(project), "--apply"])
+        validation = run([sys.executable, str(project / ".codex/scripts/validate_team_collaboration.py"), str(project)])
         manifest = json.loads((plugin / ".codex-plugin/plugin.json").read_text(encoding="utf-8"))
         print(json.dumps({
             "status": "valid",
@@ -51,6 +59,7 @@ def main() -> int:
             "packageTests": "passed" if package_tests.returncode == 0 else "failed",
             "initialization": json.loads(init_result.stdout)["status"],
             "projectValidation": validation.stdout.strip(),
+            "checksum": "valid" if checksum_path.is_file() else "not-provided",
         }, ensure_ascii=False, indent=2))
     return 0
 

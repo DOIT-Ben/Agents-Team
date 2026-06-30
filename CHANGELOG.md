@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0-beta.1 - 2026-06-30
+
+- Add privacy-first local runtime events with 14-day retention, bounded rotation, explicit deletion, and sensitive-data redaction.
+- Add preview-first feedback export, trace-linked diagnostics, duplicate-run relationships, and user-confirmed GitHub drafts.
+- Add structured GitHub forms for bugs, missed defects, false blocks, context isolation, compatibility, privacy, and feature requests.
+- Add offline paired Beta evaluation with machine-readable release gates.
+- Add pinned Beta release channels, SHA-256 sidecars, SPDX SBOM generation, release verification, privacy guidance, and recall procedures.
+- Keep the stable release channel closed until the documented Beta exit gates pass.
+
 ## 0.3.0 - 2026-06-30
 
 - Add deterministic plan, build, debug, review, and ship routing.

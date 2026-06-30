@@ -78,6 +78,17 @@ def validate(pr_body: str, issue_body: str, head_sha: str) -> list[str]:
         errors.append("test evidence artifact must be an HTTPS URL")
 
     risk = pr.get("风险等级", "") + "\n" + issue.get("风险等级", "")
+    if re.search(r"\bL3\b", risk, re.IGNORECASE):
+        decision = issue.get("L3 方案与用户确认", "")
+        if not decision:
+            errors.append("L3 Issue missing section: L3 方案与用户确认")
+        else:
+            if "方案" not in decision:
+                errors.append("L3 Issue must record the approved 方案")
+            if not re.search(r"用户确认\s*[：:]\s*(?:是|已确认|同意)", decision):
+                errors.append("L3 Issue must record explicit 用户确认")
+        if not issue.get("失败处理与回滚", ""):
+            errors.append("L3 Issue must record failure handling and 回滚")
     if re.search(r"\bL[23]\b", risk, re.IGNORECASE):
         qa = pr.get("QA 独立性与结论", "")
         if not re.search(r"独立上下文\s*[：:]\s*是", qa):

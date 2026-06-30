@@ -1,0 +1,24 @@
+name: Bug
+description: 安装、升级、运行或卸载发生异常
+title: "[Bug] "
+labels: ["feedback:bug", "status:new"]
+body:
+  - type: input
+    id: run_id
+    attributes: {label: run_id, description: 来自本地诊断预览的运行编号}
+    validations: {required: true}
+  - type: input
+    id: agents_team_version
+    attributes: {label: agents_team_version, placeholder: 0.4.0-beta.1}
+    validations: {required: true}
+  - type: textarea
+    id: reproduction
+    attributes: {label: reproduction, description: 最小复现步骤，不要粘贴密钥、源码或原始日志}
+    validations: {required: true}
+  - type: textarea
+    id: expected_actual
+    attributes: {label: 预期与实际结果}
+    validations: {required: true}
+  - type: textarea
+    id: diagnostic_summary
+    attributes: {label: 脱敏诊断摘要, description: 粘贴 feedback.md；diagnostics.json 由您检查后再决定是否附件}

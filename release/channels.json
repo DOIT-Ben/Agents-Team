@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "internal": {
+    "open": true,
+    "audience": "maintainers",
+    "versionPattern": "0.4.0-internal.N"
+  },
+  "beta": {
+    "open": true,
+    "audience": "invited-testers",
+    "version": "0.4.0-beta.1",
+    "ref": "v0.4.0-beta.1",
+    "install": "codex plugin marketplace add DOIT-Ben/Agents-Team --ref v0.4.0-beta.1"
+  },
+  "stable": {
+    "open": false,
+    "blockedUntil": "all beta exit gates pass"
+  }
+}

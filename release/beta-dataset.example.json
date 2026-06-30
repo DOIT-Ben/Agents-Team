@@ -1,0 +1,43 @@
+{
+  "invitedTesters": 1,
+  "effectiveTesters": 1,
+  "installAttempts": 1,
+  "installSuccesses": 1,
+  "upgradeAttempts": 1,
+  "upgradeSuccesses": 1,
+  "rollbackAttempts": 1,
+  "rollbackSuccesses": 1,
+  "diagnosticReports": 1,
+  "reproducibleReports": 1,
+  "openP0P1PrivacyOrDataLoss": 0,
+  "testerFeedback": [
+    {"cohortId": "B1-01", "userRating": 4, "wouldUseAgain": true}
+  ],
+  "runs": [
+    {
+      "runId": "baseline-example",
+      "pairId": "pair-example",
+      "mode": "baseline",
+      "verifiedSuccess": false,
+      "defectEscaped": true,
+      "firstPass": false,
+      "criticalMiss": false,
+      "falseGate": false,
+      "durationSeconds": 100,
+      "cost": 1.0
+    },
+    {
+      "runId": "agents-team-example",
+      "pairId": "pair-example",
+      "mode": "agents-team",
+      "verifiedSuccess": true,
+      "defectEscaped": false,
+      "firstPass": true,
+      "criticalMiss": false,
+      "falseGate": false,
+      "durationSeconds": 130,
+      "cost": 1.3,
+      "contextIsolationViolation": false
+    }
+  ]
+}

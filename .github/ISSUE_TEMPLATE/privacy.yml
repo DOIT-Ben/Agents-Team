@@ -1,0 +1,23 @@
+name: 隐私与日志问题
+description: 本地记录出现不应保存的信息
+title: "[隐私] "
+labels: ["feedback:privacy", "status:new"]
+body:
+  - type: markdown
+    attributes: {value: "请勿粘贴密钥、Cookie、私人源码或未脱敏日志。可利用漏洞请改用 Private Security Advisory。"}
+  - type: input
+    id: run_id
+    attributes: {label: run_id}
+    validations: {required: true}
+  - type: input
+    id: agents_team_version
+    attributes: {label: agents_team_version}
+    validations: {required: true}
+  - type: textarea
+    id: reproduction
+    attributes: {label: reproduction, description: 使用虚构值说明泄露模式}
+    validations: {required: true}
+  - type: textarea
+    id: affected_field
+    attributes: {label: 受影响字段和数据类别}
+    validations: {required: true}

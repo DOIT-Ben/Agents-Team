@@ -1,6 +1,6 @@
 {
   "name": "agents-team",
-  "version": "0.3.0",
+  "version": "0.4.0-beta.1",
   "description": "Agents-Team brings Goal-driven delivery, risk-aware engineering workflows, and independent QA to Codex projects.",
   "author": {
     "name": "DOIT-Ben"
@@ -12,7 +12,7 @@
     "longDescription": "Initialize and operate a GitHub-first collaboration mechanism with deterministic routing, bounded workers, verifiable engineering workflows, and independent QA.",
     "developerName": "DOIT-Ben",
     "category": "Productivity",
-    "capabilities": ["Project initialization", "Goal execution", "Engineering lifecycle", "Deterministic routing", "Independent QA", "Mechanism maintenance"],
+    "capabilities": ["Project initialization", "Goal execution", "Engineering lifecycle", "Deterministic routing", "Independent QA", "Local feedback export", "Mechanism maintenance"],
     "defaultPrompt": "初始化当前项目的团队协作机制，先扫描并预览，不要直接写入。"
   }
 }

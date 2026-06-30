@@ -1,5 +1,7 @@
 # 使用指南
 
+命令示例使用 `python3`；Windows 环境可改用 `py -3`。
+
 ## 初始化
 
 在目标 Git 仓库中对 Codex 说：
@@ -67,6 +69,30 @@ python3 PLUGIN_ROOT/scripts/manage_project.py remove /path/to/project
 ```
 
 除 `check` 外，默认均只输出预览；使用 `--apply` 才写入。升级或移除前必须由用户确认。
+
+## 本地记录与反馈
+
+运行记录默认只保存在本机，14 天后自动清理。查看和删除均不依赖 GitHub：
+
+```bash
+python3 PLUGIN_ROOT/scripts/manage_project.py logs /path/to/project
+python3 PLUGIN_ROOT/scripts/manage_project.py logs /path/to/project --run-id RUN_ID
+python3 PLUGIN_ROOT/scripts/manage_project.py delete-logs /path/to/project --run-id RUN_ID
+python3 PLUGIN_ROOT/scripts/manage_project.py delete-logs /path/to/project --run-id RUN_ID --apply
+```
+
+反馈必须先生成脱敏预览：
+
+```bash
+python3 PLUGIN_ROOT/scripts/manage_project.py feedback /path/to/project \
+  --run-id RUN_ID --feedback-type bug --severity P2 \
+  --expected-result "..." --actual-result "..." \
+  --reproduction-steps "..."
+```
+
+用户检查预览后，添加 `--confirm` 才会在本地写出反馈包；只有用户另外要求时才添加 `--open-issue` 打开 GitHub 待提交页面。工具不会自动提交 Issue，也不会自动附件诊断 JSON。
+
+离线 Beta 对照数据通过 `tools/evaluate_beta.py` 汇总。完整隐私边界和反馈字段见 [隐私说明](privacy.md) 与 [对照评测](evaluation.md)。
 
 ## 已知边界
 

@@ -1,0 +1,21 @@
+name: 上下文隔离失效
+description: 审查者继承了实现过程，或无法证明上下文独立
+title: "[上下文隔离] "
+labels: ["feedback:context-isolation", "status:new"]
+body:
+  - type: input
+    id: run_id
+    attributes: {label: run_id}
+    validations: {required: true}
+  - type: input
+    id: agents_team_version
+    attributes: {label: agents_team_version}
+    validations: {required: true}
+  - type: textarea
+    id: reproduction
+    attributes: {label: reproduction, description: 如何确认审查上下文不独立}
+    validations: {required: true}
+  - type: textarea
+    id: evidence
+    attributes: {label: 脱敏证据}
+    validations: {required: true}

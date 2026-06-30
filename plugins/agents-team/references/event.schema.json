@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/DOIT-Ben/Agents-Team/schemas/event.schema.json",
+  "title": "Agents-Team local runtime event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eventSchemaVersion", "eventId", "runId", "traceId", "agentsTeamVersion", "protocolVersion", "eventType", "timestamp", "metadata", "redactions"],
+  "properties": {
+    "eventSchemaVersion": {"const": 1},
+    "eventId": {"type": "string", "format": "uuid"},
+    "runId": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "traceId": {"type": "string"},
+    "cohortId": {"type": ["string", "null"]},
+    "agentsTeamVersion": {"type": "string"},
+    "protocolVersion": {"type": "string"},
+    "hostName": {"type": "string"},
+    "hostVersion": {"type": "string"},
+    "provider": {"type": "string"},
+    "model": {"type": "string"},
+    "os": {"type": "string"},
+    "taskCategory": {"type": "string"},
+    "riskLevel": {"type": "string"},
+    "finalStatus": {"type": ["string", "null"]},
+    "eventType": {"enum": ["goal_created", "work_dispatched", "context_isolation_checked", "implementation_delivered", "review_started", "qa_verdict", "human_intervention", "gate_blocked", "rollback", "run_completed", "run_failed"]},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "metadata": {"type": "object"},
+    "redactions": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+  }
+}

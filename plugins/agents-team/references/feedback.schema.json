@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/DOIT-Ben/Agents-Team/schemas/feedback.schema.json",
+  "title": "Agents-Team feedback bundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["feedbackSchemaVersion", "feedbackId", "feedbackType", "runId", "traceId", "severity", "expectedResult", "actualResult", "reproductionSteps", "diagnosticConsent", "contentAttachmentConsent", "redactions", "createdAt", "diagnosticEvents"],
+  "properties": {
+    "feedbackSchemaVersion": {"const": 1},
+    "feedbackId": {"type": "string", "format": "uuid"},
+    "feedbackType": {"enum": ["bug", "missed_defect", "false_block", "context_isolation", "compatibility", "privacy", "feature_request"]},
+    "runId": {"type": "string"},
+    "traceId": {"type": "string"},
+    "cohortId": {"type": ["string", "null"]},
+    "severity": {"enum": ["P0", "P1", "P2", "P3"]},
+    "expectedResult": {"type": "string", "minLength": 1},
+    "actualResult": {"type": "string", "minLength": 1},
+    "reproductionSteps": {"type": "string", "minLength": 1},
+    "userRating": {"type": ["integer", "null"], "minimum": 1, "maximum": 5},
+    "wouldUseAgain": {"type": ["boolean", "null"]},
+    "diagnosticConsent": {"type": "boolean"},
+    "contentAttachmentConsent": {"type": "boolean"},
+    "redactions": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "createdAt": {"type": "string", "format": "date-time"},
+    "agentsTeamVersion": {"type": "string"},
+    "protocolVersion": {"type": "string"},
+    "relatedFeedbackIds": {"type": "array", "items": {"type": "string", "format": "uuid"}},
+    "diagnosticEvents": {"type": "array", "items": {"type": "object"}}
+  }
+}

@@ -8,6 +8,7 @@ description: Use when a completed L2 or L3 Goal or pull request requires indepen
 ## Independence Gate
 
 Run in a 全新上下文 that did not implement the change. If no independent context is available, report that independent QA is blocked; never simulate independence.
+Receive the opaque `runId` and `traceId` without implementation reasoning. Record `review_started`, `context_isolation_checked`, and the final `qa_verdict` through `../../scripts/record_event.py`; never include source, prompts, or model output in event metadata.
 
 ## Read-Only Workflow
 

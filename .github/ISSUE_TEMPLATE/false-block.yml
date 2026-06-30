@@ -1,0 +1,25 @@
+name: 误拦截问题
+description: 门禁阻止了本来合法且可验证的交付
+title: "[误拦截] "
+labels: ["feedback:false-block", "status:new"]
+body:
+  - type: input
+    id: run_id
+    attributes: {label: run_id}
+    validations: {required: true}
+  - type: input
+    id: agents_team_version
+    attributes: {label: agents_team_version}
+    validations: {required: true}
+  - type: textarea
+    id: reproduction
+    attributes: {label: reproduction, description: 触发门禁的最小步骤}
+    validations: {required: true}
+  - type: input
+    id: diagnostic_code
+    attributes: {label: 诊断代码}
+    validations: {required: true}
+  - type: textarea
+    id: legitimacy
+    attributes: {label: 为什么该交付应当通过}
+    validations: {required: true}

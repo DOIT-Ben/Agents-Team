@@ -11,10 +11,11 @@ class PackageTests(unittest.TestCase):
     def test_plugin_manifest_is_release_ready(self):
         manifest = json.loads((PLUGIN_ROOT / ".codex-plugin/plugin.json").read_text(encoding="utf-8"))
         self.assertEqual(manifest["name"], "agents-team")
-        self.assertEqual(manifest["version"], "0.3.0")
+        self.assertEqual(manifest["version"], "0.4.0-beta.1")
         self.assertEqual(manifest["author"]["name"], "DOIT-Ben")
         self.assertIn("Engineering lifecycle", manifest["interface"]["capabilities"])
         self.assertIn("Deterministic routing", manifest["interface"]["capabilities"])
+        self.assertIn("Local feedback export", manifest["interface"]["capabilities"])
         self.assertNotIn("scaffold", json.dumps(manifest).lower())
         self.assertNotIn("local developer", json.dumps(manifest).lower())
 

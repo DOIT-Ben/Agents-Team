@@ -1,0 +1,4 @@
+interface:
+  display_name: "报告 Agents-Team 反馈"
+  short_description: "预览运行记录，自动脱敏敏感信息，并在确认后导出 GitHub 反馈材料"
+  default_prompt: "报告这次团队协作的问题，先生成脱敏预览，未经我确认不要写出反馈包或打开 GitHub。"

@@ -14,9 +14,9 @@ VALID_PR = """## 关联任务
 
 Closes #12
 
-## Goal 对照
+## 风险等级
 
-Goal achieved with evidence.
+L2
 
 ## 实际改动
 
@@ -26,21 +26,30 @@ Implementation summary.
 
 None.
 
-## 必须完成证据
+## 必须完成项证据
 
-- item: test output
+- [x] item: test output
 
-## 验收门禁结果
+## 测试门禁
 
-- tests passed
+gate: test:unit
+command: py -3 -m unittest
+exitCode: 0
+passed: 12
+failed: 0
+skipped: 0
+timestamp: 2026-06-30T10:00:00Z
+commitSha: abc123
+artifact: https://github.com/example/actions/runs/1
 
-## 任务边界检查
+## 行为验收
 
-No boundary violation.
+Expected and actual behavior match.
 
-## QA 结论
+## QA 独立性与结论
 
-PASS
+- 独立上下文：是
+- 结论：PASS
 
 ## 剩余风险
 
@@ -49,6 +58,10 @@ None.
 ## 回滚方式
 
 Revert PR.
+
+## 失败记录
+
+无失败记录。
 """
 
 VALID_ISSUE = """## Goal
@@ -71,34 +84,38 @@ Ship the feature.
 
 L2
 
-## 依赖与阻塞
+## 依赖与阻塞条件
 
 None.
+
+## 失败处理与回滚
+
+Revert the change and rerun tests.
 """
 
 
 class PrContractTests(unittest.TestCase):
     def test_valid_pr_and_issue_pass(self):
-        errors = module.validate(VALID_PR, issue_bodies={12: VALID_ISSUE}, require_issue_lookup=True)
+        errors = module.validate(VALID_PR, VALID_ISSUE, "abc123")
         self.assertEqual(errors, [])
 
     def test_placeholder_pr_fails(self):
         body = VALID_PR.replace("Closes #12", "Closes #").replace("PASS", "待验收")
-        errors = module.validate(body)
+        errors = module.validate(body, VALID_ISSUE, "abc123")
         self.assertTrue(any("Issue" in error for error in errors))
-        self.assertTrue(any("待验收" in error for error in errors))
+        self.assertTrue(any("placeholder" in error for error in errors))
 
     def test_missing_issue_fields_fail(self):
-        errors = module.validate(VALID_PR, issue_bodies={12: "## Goal\nOnly goal."}, require_issue_lookup=True)
+        errors = module.validate(VALID_PR, "## Goal\nOnly goal.", "abc123")
         self.assertTrue(any("必须完成" in error for error in errors))
         self.assertTrue(any("任务边界" in error for error in errors))
 
     def test_l3_issue_requires_confirmation_plan_and_rollback(self):
-        l3_issue = VALID_ISSUE.replace("L2", "L3 真实 Provider")
-        errors = module.validate(VALID_PR, issue_bodies={12: l3_issue}, require_issue_lookup=True)
+        l3_issue = VALID_ISSUE.replace("L2", "L3 真实 Provider").split("## 失败处理与回滚")[0]
+        errors = module.validate(VALID_PR.replace("L2", "L3"), l3_issue, "abc123")
         self.assertTrue(any("用户确认" in error for error in errors))
         self.assertTrue(any("方案" in error for error in errors))
-        self.assertTrue(any("回滚" in error for error in errors))
+        self.assertTrue(any("failure handling" in error for error in errors))
 
 
 if __name__ == "__main__":

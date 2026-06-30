@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "release": "0.4.0-beta.1",
+  "protocol": "2.0.0",
+  "feedbackSchema": 1,
+  "python": ">=3.10",
+  "operatingSystems": ["Windows 10/11", "macOS", "Linux"],
+  "codex": "Current stable Codex with Plugin support",
+  "notes": [
+    "GitHub CLI is optional; feedback can always be exported locally.",
+    "External engineering Skills are optional providers and cannot bypass Protocol 2.0."
+  ]
+}

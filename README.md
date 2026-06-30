@@ -6,7 +6,7 @@
 
 **让 Codex 不只是“写代码”，而是围绕目标持续推进、接受验收、完成交付。**
 
-[![Release](https://img.shields.io/badge/release-0.3.0-ff5c5c?style=flat-square)](CHANGELOG.md)
+[![Release](https://img.shields.io/badge/release-0.4.0--beta.1-ff5c5c?style=flat-square)](CHANGELOG.md)
 [![Tests](https://img.shields.io/badge/tests-verified-19c37d?style=flat-square)](#开发与验证)
 [![Codex Plugin](https://img.shields.io/badge/Codex-Plugin-19a7ce?style=flat-square)](plugins/agents-team)
 [![GitHub first](https://img.shields.io/badge/workflow-GitHub%20first-181717?style=flat-square)](#一条完整的交付链路)
@@ -83,6 +83,7 @@ Pull Request 汇总最终差异
 | `execute-team-goal` | 按 Goal、风险等级和任务边界执行正式任务 |
 | `verify-team-goal` | 在独立上下文中基于证据给出 PASS 或 FAIL |
 | `manage-team-collaboration` | 检查漂移、升级、修复或移除机制 |
+| `report-team-feedback` | 预览本地运行记录，脱敏后由用户确认导出反馈 |
 
 执行 Goal 时，路由层会根据生命周期和失败状态选择六项内置工程能力：
 
@@ -103,8 +104,10 @@ Pull Request 汇总最终差异
 
 ### 从 GitHub 安装
 
+当前为邀请制 Beta，稳定通道尚未开放。测试者必须安装固定标签，不能跟随 `master`：
+
 ```bash
-codex plugin marketplace add DOIT-Ben/Agents-Team --ref master
+codex plugin marketplace add DOIT-Ben/Agents-Team --ref v0.4.0-beta.1
 ```
 
 重启 Codex，在 Plugin 目录中安装并启用 `agents-team`。随后进入任意 Git 仓库，对 Codex 说：
@@ -133,6 +136,8 @@ codex plugin marketplace add /absolute/path/to/Agents-Team
 升级团队协作机制
 修复团队协作机制
 移除团队协作机制
+报告这次协作的问题
+导出这次运行的诊断信息
 ```
 
 完整命令行用法和行为边界见 [使用指南](docs/usage.md)。
@@ -165,16 +170,21 @@ Agents-Team/
 
 ## 开发与验证
 
+以下示例使用 `python3`；Windows 若未提供该命令，使用 `py -3` 执行同一脚本。
+
 ```bash
 cd plugins/agents-team
 python3 -m unittest discover -s tests -v
 
 cd ../..
-python3 tools/build_distribution.py
-python3 tools/verify_distribution.py dist/agents-team-0.3.0.zip
+python3 tools/run_tests.py --output dist/test-results.json
+python3 tools/build_distribution.py --channel beta --tag v0.4.0-beta.1 --test-evidence dist/test-results.json
+python3 tools/verify_distribution.py dist/agents-team-0.4.0-beta.1.zip
 ```
 
-当前测试覆盖 Python、Next.js、.NET、Monorepo、既有 `AGENTS.md` 和既有 CI 等初始化场景，并检查合同、证据、生命周期、路由、角色边界、路径穿越、符号链接和分发包完整性。
+构建同时生成 SHA-256、SPDX SBOM 和构建报告。当前测试覆盖 Python、Next.js、.NET、Monorepo、既有 `AGENTS.md` 和既有 CI 等初始化场景，并检查合同、证据、生命周期、路由、角色边界、隐私脱敏、本地反馈、离线评测、路径穿越、符号链接和分发包完整性。
+
+Beta 参与、隐私、评测和召回分别见 [Beta 指南](docs/beta-guide.md)、[隐私说明](docs/privacy.md)、[对照评测](docs/evaluation.md) 与 [发布和召回](docs/release-and-recall.md)。
 
 ## 边界
 
