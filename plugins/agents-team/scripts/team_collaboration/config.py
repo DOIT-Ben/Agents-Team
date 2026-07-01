@@ -80,6 +80,18 @@ def validate_config(config: Any) -> list[str]:
         ):
             errors.append("enforcement.failClosedRisks must contain only L1, L2, L3")
 
+        for field in ("requireLinkedIssue", "requireIndependentQA"):
+            values = enforcement.get(field)
+            if (
+                not isinstance(values, dict)
+                or set(values) != {"L1", "L2", "L3"}
+                or any(not isinstance(value, bool) for value in values.values())
+            ):
+                errors.append(f"enforcement.{field} must map L1, L2 and L3 to booleans")
+
+        if not isinstance(enforcement.get("requireFailureRecord"), bool):
+            errors.append("enforcement.requireFailureRecord must be boolean")
+
     return errors
 
 
