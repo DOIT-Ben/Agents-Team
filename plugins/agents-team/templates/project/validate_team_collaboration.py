@@ -8,15 +8,21 @@ import sys
 from pathlib import Path
 
 
-REQUIRED = [
-    "AGENTS.md",
-    ".codex/team-collaboration.json",
-    ".codex/scripts/validate_pr_contract.py",
-    ".codex/scripts/doctor_team_collaboration.py",
-    ".github/ISSUE_TEMPLATE/team-goal.yml",
-    ".github/ISSUE_TEMPLATE/critical-goal.yml",
-    ".github/pull_request_template.md",
-]
+EXPECTED_MANAGED_FILES = frozenset(
+    {
+        "AGENTS.md#TEAM-COLLABORATION",
+        ".codex/schemas/team-collaboration.schema.json",
+        ".codex/scripts/validate_team_collaboration.py",
+        ".codex/scripts/validate_pr_contract.py",
+        ".codex/scripts/doctor_team_collaboration.py",
+        ".github/ISSUE_TEMPLATE/team-goal.yml",
+        ".github/ISSUE_TEMPLATE/critical-goal.yml",
+        ".github/pull_request_template.md",
+        ".github/workflows/collaboration-gate.yml",
+        "docs/adr/README.md",
+    }
+)
+REQUIRED = sorted(target for target in EXPECTED_MANAGED_FILES if target != "AGENTS.md#TEAM-COLLABORATION") + ["AGENTS.md"]
 BLOCK_RE = re.compile(
     r"<!-- TEAM-COLLABORATION:START(?: [^>]*)? -->\n.*?\n<!-- TEAM-COLLABORATION:END -->\n?",
     re.DOTALL,
@@ -25,6 +31,16 @@ BLOCK_RE = re.compile(
 
 def sha256(data: bytes) -> str:
     return "sha256:" + hashlib.sha256(data).hexdigest()
+
+
+def managed_file_set_errors(managed_files: dict[str, str]) -> list[str]:
+    errors: list[str] = []
+    actual = set(managed_files)
+    for target in sorted(EXPECTED_MANAGED_FILES - actual):
+        errors.append(f"managed file set mismatch: missing {target}")
+    for target in sorted(actual - EXPECTED_MANAGED_FILES):
+        errors.append(f"managed file set mismatch: unexpected {target}")
+    return errors
 
 
 def main() -> int:
@@ -36,7 +52,13 @@ def main() -> int:
             config = json.loads(config_path.read_text(encoding="utf-8"))
             if config.get("mechanism", {}).get("id") != "agents-team":
                 errors.append("invalid mechanism.id")
-            for target, expected in config.get("managedFiles", {}).items():
+            managed_files = config.get("managedFiles", {})
+            if not isinstance(managed_files, dict):
+                errors.append("managedFiles must be an object")
+                managed_files = {}
+            errors.extend(managed_file_set_errors(managed_files))
+            for target in sorted(EXPECTED_MANAGED_FILES & set(managed_files)):
+                expected = managed_files[target]
                 if target == "AGENTS.md#TEAM-COLLABORATION":
                     agents_path = root / "AGENTS.md"
                     matches = BLOCK_RE.findall(agents_path.read_text(encoding="utf-8")) if agents_path.is_file() else []
