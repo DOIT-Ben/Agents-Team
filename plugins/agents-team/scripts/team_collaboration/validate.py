@@ -9,8 +9,34 @@ from .config import ConfigError, load_config
 from .managed_block import ManagedBlockError, extract_agents_block
 
 
+EXPECTED_MANAGED_FILES = frozenset(
+    {
+        "AGENTS.md#TEAM-COLLABORATION",
+        ".codex/schemas/team-collaboration.schema.json",
+        ".codex/scripts/validate_team_collaboration.py",
+        ".codex/scripts/validate_pr_contract.py",
+        ".codex/scripts/doctor_team_collaboration.py",
+        ".github/ISSUE_TEMPLATE/team-goal.yml",
+        ".github/ISSUE_TEMPLATE/critical-goal.yml",
+        ".github/pull_request_template.md",
+        ".github/workflows/collaboration-gate.yml",
+        "docs/adr/README.md",
+    }
+)
+
+
 def _sha256(data: bytes) -> str:
     return "sha256:" + hashlib.sha256(data).hexdigest()
+
+
+def _managed_file_set_errors(managed_files: dict[str, str]) -> list[str]:
+    errors: list[str] = []
+    actual = set(managed_files)
+    for target in sorted(EXPECTED_MANAGED_FILES - actual):
+        errors.append(f"managed file set mismatch: missing {target}")
+    for target in sorted(actual - EXPECTED_MANAGED_FILES):
+        errors.append(f"managed file set mismatch: unexpected {target}")
+    return errors
 
 
 def validate_project(root: Path) -> list[str]:
@@ -24,7 +50,10 @@ def validate_project(root: Path) -> list[str]:
         return [str(exc)]
 
     errors: list[str] = []
-    for target, expected_hash in config["managedFiles"].items():
+    managed_files = config["managedFiles"]
+    errors.extend(_managed_file_set_errors(managed_files))
+    for target in sorted(EXPECTED_MANAGED_FILES & set(managed_files)):
+        expected_hash = managed_files[target]
         if target == "AGENTS.md#TEAM-COLLABORATION":
             path = root / "AGENTS.md"
             if not path.is_file():
