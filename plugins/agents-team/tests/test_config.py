@@ -76,6 +76,33 @@ class ConfigTests(unittest.TestCase):
         config["enforcement"]["mode"] = "sometimes"
         self.assertIn("enforcement.mode must be strict or advisory", validate_config(config))
 
+    def test_linked_issue_rules_must_cover_all_risks_with_booleans(self):
+        config = valid_config()
+        config["enforcement"]["requireLinkedIssue"] = {"L1": False, "L2": True}
+        self.assertIn(
+            "enforcement.requireLinkedIssue must map L1, L2 and L3 to booleans",
+            validate_config(config),
+        )
+        config = valid_config()
+        config["enforcement"]["requireLinkedIssue"] = {"L1": False, "L2": True, "L3": "yes"}
+        self.assertIn(
+            "enforcement.requireLinkedIssue must map L1, L2 and L3 to booleans",
+            validate_config(config),
+        )
+
+    def test_independent_qa_rules_must_cover_all_risks_with_booleans(self):
+        config = valid_config()
+        config["enforcement"]["requireIndependentQA"] = {"L1": False, "L2": True, "L3": "yes"}
+        self.assertIn(
+            "enforcement.requireIndependentQA must map L1, L2 and L3 to booleans",
+            validate_config(config),
+        )
+
+    def test_failure_record_requirement_must_be_boolean(self):
+        config = valid_config()
+        config["enforcement"]["requireFailureRecord"] = "required"
+        self.assertIn("enforcement.requireFailureRecord must be boolean", validate_config(config))
+
     def test_load_config_raises_with_all_validation_errors(self):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / "config.json"
