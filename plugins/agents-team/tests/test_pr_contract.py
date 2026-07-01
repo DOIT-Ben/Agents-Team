@@ -95,6 +95,21 @@ None.
 Revert the PR.
 """
 
+VALID_L3_ISSUE = VALID_ISSUE.replace("L2", "L3 真实 Provider") + """
+
+## 用户确认
+
+用户确认: approved
+
+## 方案
+
+方案: execute with a staged rollout.
+
+## 回滚
+
+回滚: revert the PR.
+"""
+
 
 class PrContractTests(unittest.TestCase):
     def test_valid_pr_and_issue_pass(self):
@@ -120,6 +135,17 @@ class PrContractTests(unittest.TestCase):
         body = VALID_PR.replace("独立上下文: 是", "独立上下文: 否")
         errors = module.validate(body, VALID_ISSUE, HEAD_SHA)
         self.assertTrue(any("independent context" in error for error in errors))
+
+    def test_l3_issue_requires_confirmation_plan_and_rollback(self):
+        l3_issue = VALID_ISSUE.replace("L2", "L3 真实 Provider")
+        errors = module.validate(VALID_PR, l3_issue, HEAD_SHA)
+        self.assertTrue(any("用户确认" in error for error in errors))
+        self.assertTrue(any("方案" in error for error in errors))
+        self.assertTrue(any("回滚" in error for error in errors))
+
+    def test_valid_l3_issue_passes(self):
+        errors = module.validate(VALID_PR, VALID_L3_ISSUE, HEAD_SHA)
+        self.assertEqual(errors, [])
 
 
 if __name__ == "__main__":
