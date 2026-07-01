@@ -48,6 +48,32 @@ class CliTests(unittest.TestCase):
             self.assertEqual(result.returncode, 1)
             self.assertIn("managed file drift", result.stdout)
 
+    def test_generated_validator_rejects_managed_file_manifest_tampering_without_plugin(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            subprocess.run(["git", "init", "-q", "-b", "main"], cwd=root, check=True)
+            subprocess.run(
+                ["python3", str(PLUGIN_ROOT / "scripts" / "initialize_project.py"), str(root), "--apply"],
+                text=True,
+                capture_output=True,
+                check=True,
+            )
+            config_path = root / ".codex/team-collaboration.json"
+            config = json.loads(config_path.read_text(encoding="utf-8"))
+            del config["managedFiles"][".codex/scripts/validate_team_collaboration.py"]
+            config_path.write_text(json.dumps(config, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+            result = subprocess.run(
+                ["python3", str(root / ".codex/scripts/validate_team_collaboration.py"), str(root)],
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(result.returncode, 1)
+            self.assertIn(
+                "managed file set mismatch: missing .codex/scripts/validate_team_collaboration.py",
+                result.stdout,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
