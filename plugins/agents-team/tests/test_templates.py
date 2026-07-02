@@ -42,7 +42,7 @@ class TemplateContractTests(unittest.TestCase):
 
     def test_generated_gate_validates_pr_issue_and_current_head_evidence(self):
         validator = (TEMPLATES / "validate_pr_contract.py").read_text(encoding="utf-8")
-        for phrase in ["GITHUB_TOKEN", "head.sha", "commitSha", "timestamp", "Issue"]:
+        for phrase in ["GITHUB_TOKEN", "head.sha", "commitSha", "timestamp", "Issue", "check-runs"]:
             self.assertIn(phrase, validator)
         workflow = (TEMPLATES / "collaboration-gate.yml").read_text(encoding="utf-8")
         self.assertNotIn("\n  push:\n", workflow)

@@ -28,6 +28,7 @@ python PLUGIN_ROOT/scripts/validate_project.py /path/to/project
 
 bootstrap Gate 通过后才可考虑合并初始化 PR。
 修正 PR 正文证据时不需要制造新提交；`edited` 事件会针对同一 head SHA 重新执行门禁，避免证据刚写入就因新提交失效。
+PR 正文中的测试门禁字段只是可读摘要；生成的 Gate 会读取当前 head 的 GitHub Checks / workflow run 作为测试事实源。
 
 ## 执行 Goal
 
