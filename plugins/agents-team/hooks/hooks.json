@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${PLUGIN_ROOT}/hooks/session_start.py .",
+            "command": "python ${PLUGIN_ROOT}/hooks/session_start.py .",
             "statusMessage": "Checking team collaboration mechanism"
           }
         ]

@@ -11,9 +11,9 @@ Codex 必须先扫描并展示 dry-run，包括技术栈、命令、新增文件
 命令行等价操作：
 
 ```bash
-python3 PLUGIN_ROOT/scripts/initialize_project.py /path/to/project
-python3 PLUGIN_ROOT/scripts/initialize_project.py /path/to/project --apply
-python3 PLUGIN_ROOT/scripts/validate_project.py /path/to/project
+python PLUGIN_ROOT/scripts/initialize_project.py /path/to/project
+python PLUGIN_ROOT/scripts/initialize_project.py /path/to/project --apply
+python PLUGIN_ROOT/scripts/validate_project.py /path/to/project
 ```
 
 ### 首次安装 bootstrap
@@ -60,10 +60,10 @@ plan-team-goal -> build-team-goal -> review-team-goal -> ship-team-goal
 ## 管理
 
 ```bash
-python3 PLUGIN_ROOT/scripts/manage_project.py check /path/to/project
-python3 PLUGIN_ROOT/scripts/manage_project.py repair /path/to/project
-python3 PLUGIN_ROOT/scripts/manage_project.py upgrade /path/to/project
-python3 PLUGIN_ROOT/scripts/manage_project.py remove /path/to/project
+python PLUGIN_ROOT/scripts/manage_project.py check /path/to/project
+python PLUGIN_ROOT/scripts/manage_project.py repair /path/to/project
+python PLUGIN_ROOT/scripts/manage_project.py upgrade /path/to/project
+python PLUGIN_ROOT/scripts/manage_project.py remove /path/to/project
 ```
 
 除 `check` 外，默认均只输出预览；使用 `--apply` 才写入。升级或移除前必须由用户确认。

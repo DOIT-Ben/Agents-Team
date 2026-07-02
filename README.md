@@ -167,11 +167,11 @@ Agents-Team/
 
 ```bash
 cd plugins/agents-team
-python3 -m unittest discover -s tests -v
+python -m unittest discover -s tests -v
 
 cd ../..
-python3 tools/build_distribution.py
-python3 tools/verify_distribution.py dist/agents-team-0.3.0.zip
+python tools/build_distribution.py
+python tools/verify_distribution.py dist/agents-team-0.3.0.zip
 ```
 
 当前测试覆盖 Python、Next.js、.NET、Monorepo、既有 `AGENTS.md` 和既有 CI 等初始化场景，并检查合同、证据、生命周期、路由、角色边界、路径穿越、符号链接和分发包完整性。

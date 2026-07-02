@@ -1,3 +1,4 @@
+import json
 import subprocess
 import sys
 import tempfile
@@ -32,6 +33,21 @@ class ValidationTests(unittest.TestCase):
             target = root / ".github" / "ISSUE_TEMPLATE" / "team-goal.yml"
             target.write_text(target.read_text(encoding="utf-8") + "# drift\n", encoding="utf-8")
             self.assertIn("managed file drift: .github/ISSUE_TEMPLATE/team-goal.yml", validate_project(root))
+
+    def test_managed_file_manifest_tampering_is_reported(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            init_git(root)
+            initialize_project(root, PLUGIN_ROOT, apply=True)
+            config_path = root / ".codex" / "team-collaboration.json"
+            config = json.loads(config_path.read_text(encoding="utf-8"))
+            del config["managedFiles"][".codex/scripts/validate_team_collaboration.py"]
+            config_path.write_text(json.dumps(config, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+            self.assertIn(
+                "managed file set mismatch: missing .codex/scripts/validate_team_collaboration.py",
+                validate_project(root),
+            )
 
     def test_agents_text_outside_managed_block_does_not_drift(self):
         with tempfile.TemporaryDirectory() as temp:
