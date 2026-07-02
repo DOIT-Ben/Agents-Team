@@ -64,6 +64,25 @@ commitSha：abc123
 无失败记录。
 """
 
+VALID_CHECK_RUNS = {
+    "check_runs": [
+        {
+            "name": "Python unit tests (ubuntu-latest)",
+            "head_sha": "abc123",
+            "status": "completed",
+            "conclusion": "success",
+            "html_url": "https://github.com/example/actions/runs/1/job/1",
+        },
+        {
+            "name": "Python unit tests (windows-latest)",
+            "head_sha": "abc123",
+            "status": "completed",
+            "conclusion": "success",
+            "html_url": "https://github.com/example/actions/runs/1/job/2",
+        },
+    ]
+}
+
 
 class GeneratedPrGateTests(unittest.TestCase):
     def test_valid_current_head_contract_passes(self):
@@ -95,6 +114,23 @@ class GeneratedPrGateTests(unittest.TestCase):
         body = VALID_PR.replace("QA 上下文：qa-session-1", "QA 上下文：implement-session-1")
         errors = MODULE.validate(body, VALID_ISSUE, "abc123")
         self.assertTrue(any("QA context must differ" in error for error in errors))
+
+    def test_current_head_github_checks_pass(self):
+        self.assertEqual(MODULE.validate_check_runs(VALID_CHECK_RUNS, "abc123"), [])
+
+    def test_missing_github_checks_are_rejected(self):
+        errors = MODULE.validate_check_runs({"check_runs": []}, "abc123")
+        self.assertTrue(any("GitHub Checks evidence missing" in error for error in errors))
+
+    def test_stale_github_checks_are_rejected(self):
+        stale = {"check_runs": [{**VALID_CHECK_RUNS["check_runs"][0], "head_sha": "old456"}]}
+        errors = MODULE.validate_check_runs(stale, "abc123")
+        self.assertTrue(any("current head" in error for error in errors))
+
+    def test_failed_github_check_is_rejected(self):
+        failed = {"check_runs": [{**VALID_CHECK_RUNS["check_runs"][0], "conclusion": "failure"}]}
+        errors = MODULE.validate_check_runs(failed, "abc123")
+        self.assertTrue(any("did not pass" in error for error in errors))
 
 if __name__ == "__main__":
     unittest.main()

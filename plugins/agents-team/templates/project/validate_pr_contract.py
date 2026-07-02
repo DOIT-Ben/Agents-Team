@@ -102,6 +102,30 @@ def validate(pr_body: str, issue_body: str, head_sha: str) -> list[str]:
     return errors
 
 
+def validate_check_runs(payload: dict, head_sha: str) -> list[str]:
+    runs = payload.get("check_runs") or []
+    current_runs = [run for run in runs if str(run.get("head_sha") or "") == head_sha]
+    if not current_runs:
+        return ["GitHub Checks evidence missing for current head"]
+
+    completed = [run for run in current_runs if str(run.get("status") or "") == "completed"]
+    if not completed:
+        return ["GitHub Checks evidence missing completed runs for current head"]
+
+    errors: list[str] = []
+    successful = False
+    for run in completed:
+        conclusion = str(run.get("conclusion") or "")
+        name = str(run.get("name") or "unnamed check")
+        if conclusion == "success":
+            successful = True
+        else:
+            errors.append(f"GitHub Check {name} did not pass: {conclusion or 'missing conclusion'}")
+    if not successful:
+        errors.append("GitHub Checks evidence has no successful completed run for current head")
+    return errors
+
+
 def fetch_issue(repo: str, number: int, token: str) -> str:
     request = urllib.request.Request(
         f"https://api.github.com/repos/{repo}/issues/{number}",
@@ -112,6 +136,19 @@ def fetch_issue(repo: str, number: int, token: str) -> str:
             return str(json.loads(response.read().decode("utf-8")).get("body") or "")
     except (urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError) as exc:
         raise RuntimeError(f"cannot read linked Issue: {exc}") from exc
+
+
+def fetch_check_runs(repo: str, head_sha: str, token: str) -> dict:
+    request = urllib.request.Request(
+        f"https://api.github.com/repos/{repo}/commits/{head_sha}/check-runs",
+        headers={"Accept": "application/vnd.github+json", "Authorization": f"Bearer {token}", "User-Agent": "agents-team-gate"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+            return payload if isinstance(payload, dict) else {"check_runs": []}
+    except (urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"cannot read GitHub Checks: {exc}") from exc
 
 
 def main() -> int:
@@ -145,6 +182,14 @@ def main() -> int:
                 print(f"Agents-Team gate blocked: {exc}")
                 return 1
         errors = validate(pr_body, issue_body, head_sha)
+        if not token:
+            print("Agents-Team gate blocked: GITHUB_TOKEN is required")
+            return 1
+        try:
+            errors.extend(validate_check_runs(fetch_check_runs(repo, head_sha, token), head_sha))
+        except RuntimeError as exc:
+            print(f"Agents-Team gate blocked: {exc}")
+            return 1
 
     if errors:
         print("Agents-Team PR contract failed:")
