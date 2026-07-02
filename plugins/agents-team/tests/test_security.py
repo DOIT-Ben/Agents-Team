@@ -18,7 +18,12 @@ class SecurityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp, tempfile.TemporaryDirectory() as outside:
             root = Path(temp)
             subprocess.run(["git", "init", "-q", "-b", "main"], cwd=root, check=True)
-            os.symlink(outside, root / ".codex", target_is_directory=True)
+            try:
+                os.symlink(outside, root / ".codex", target_is_directory=True)
+            except OSError as exc:
+                if getattr(exc, "winerror", None) == 1314:
+                    self.skipTest("creating directory symlinks requires elevated Windows privileges")
+                raise
             with self.assertRaises(InitializationError):
                 initialize_project(root, PLUGIN_ROOT, apply=True, allow_dirty=True)
             self.assertEqual(list(Path(outside).iterdir()), [])

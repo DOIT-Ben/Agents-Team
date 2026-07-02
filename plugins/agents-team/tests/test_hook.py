@@ -1,4 +1,5 @@
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -17,7 +18,7 @@ class HookTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             before = snapshot(root)
-            result = subprocess.run(["python3", str(HOOK), str(root)], text=True, capture_output=True)
+            result = subprocess.run([sys.executable, str(HOOK), str(root)], text=True, capture_output=True)
             self.assertEqual(result.returncode, 0)
             self.assertIn("尚未初始化团队协作机制", result.stdout)
             self.assertEqual(snapshot(root), before)

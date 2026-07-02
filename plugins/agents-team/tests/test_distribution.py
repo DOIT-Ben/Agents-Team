@@ -1,4 +1,5 @@
 import subprocess
+import sys
 import tempfile
 import unittest
 import zipfile
@@ -14,7 +15,7 @@ class DistributionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             output = Path(temp) / "plugin.zip"
             result = subprocess.run(
-                ["python3", str(REPO_ROOT / "tools/build_distribution.py"), "--output", str(output)],
+                [sys.executable, str(REPO_ROOT / "tools/build_distribution.py"), "--output", str(output)],
                 text=True,
                 capture_output=True,
             )

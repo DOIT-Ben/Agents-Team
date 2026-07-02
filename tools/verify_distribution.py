@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
+import sys
 import tempfile
 import zipfile
 from pathlib import Path
@@ -38,11 +39,11 @@ def main() -> int:
         run(["git", "commit", "-q", "-m", "fixture"], project)
         plugin = package / "plugins" / "agents-team"
         package_tests = run(
-            ["python3", "-m", "unittest", "discover", "-s", "plugins/agents-team/tests", "-v"],
+            [sys.executable, "-m", "unittest", "discover", "-s", "plugins/agents-team/tests", "-v"],
             package,
         )
-        init_result = run(["python3", str(plugin / "scripts/initialize_project.py"), str(project), "--apply"])
-        validation = run(["python3", str(project / ".codex/scripts/validate_team_collaboration.py"), str(project)])
+        init_result = run([sys.executable, str(plugin / "scripts/initialize_project.py"), str(project), "--apply"])
+        validation = run([sys.executable, str(project / ".codex/scripts/validate_team_collaboration.py"), str(project)])
         manifest = json.loads((plugin / ".codex-plugin/plugin.json").read_text(encoding="utf-8"))
         print(json.dumps({
             "status": "valid",

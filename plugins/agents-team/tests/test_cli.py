@@ -1,5 +1,6 @@
 import json
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -14,14 +15,14 @@ class CliTests(unittest.TestCase):
             root = Path(temp)
             subprocess.run(["git", "init", "-q", "-b", "main"], cwd=root, check=True)
             initialize = subprocess.run(
-                ["python3", str(PLUGIN_ROOT / "scripts" / "initialize_project.py"), str(root), "--apply"],
+                [sys.executable, str(PLUGIN_ROOT / "scripts" / "initialize_project.py"), str(root), "--apply"],
                 text=True,
                 capture_output=True,
             )
             self.assertEqual(initialize.returncode, 0, initialize.stderr)
             self.assertEqual(json.loads(initialize.stdout)["status"], "applied")
             validate = subprocess.run(
-                ["python3", str(PLUGIN_ROOT / "scripts" / "validate_project.py"), str(root)],
+                [sys.executable, str(PLUGIN_ROOT / "scripts" / "validate_project.py"), str(root)],
                 text=True,
                 capture_output=True,
             )
@@ -33,7 +34,7 @@ class CliTests(unittest.TestCase):
             root = Path(temp)
             subprocess.run(["git", "init", "-q", "-b", "main"], cwd=root, check=True)
             subprocess.run(
-                ["python3", str(PLUGIN_ROOT / "scripts" / "initialize_project.py"), str(root), "--apply"],
+                [sys.executable, str(PLUGIN_ROOT / "scripts" / "initialize_project.py"), str(root), "--apply"],
                 text=True,
                 capture_output=True,
                 check=True,
@@ -41,7 +42,7 @@ class CliTests(unittest.TestCase):
             target = root / ".github/ISSUE_TEMPLATE/team-goal.yml"
             target.write_text(target.read_text(encoding="utf-8") + "# drift\n", encoding="utf-8")
             result = subprocess.run(
-                ["python3", str(root / ".codex/scripts/validate_team_collaboration.py"), str(root)],
+                [sys.executable, str(root / ".codex/scripts/validate_team_collaboration.py"), str(root)],
                 text=True,
                 capture_output=True,
             )
@@ -53,7 +54,7 @@ class CliTests(unittest.TestCase):
             root = Path(temp)
             subprocess.run(["git", "init", "-q", "-b", "main"], cwd=root, check=True)
             subprocess.run(
-                ["python3", str(PLUGIN_ROOT / "scripts" / "initialize_project.py"), str(root), "--apply"],
+                [sys.executable, str(PLUGIN_ROOT / "scripts" / "initialize_project.py"), str(root), "--apply"],
                 text=True,
                 capture_output=True,
                 check=True,
@@ -64,7 +65,7 @@ class CliTests(unittest.TestCase):
             config_path.write_text(json.dumps(config, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
             result = subprocess.run(
-                ["python3", str(root / ".codex/scripts/validate_team_collaboration.py"), str(root)],
+                [sys.executable, str(root / ".codex/scripts/validate_team_collaboration.py"), str(root)],
                 text=True,
                 capture_output=True,
             )
