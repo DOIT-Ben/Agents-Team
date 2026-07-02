@@ -57,11 +57,15 @@ L2
 - [x] 上传成功：测试 `test_upload_success`
 
 ## 测试门禁
-- command: `python3 -m unittest`
+- gate: test:unit
+  command: `python3 -m unittest`
   exitCode: 0
   passed: 12
   failed: 0
   skipped: 0
+  timestamp: 2026-07-01T08:00:00+00:00
+  commitSha: abc123
+  artifact: https://github.com/example/actions/runs/1
 
 ## 行为验收
 预期：上传后返回资源标识。实际：返回 `asset-1`。

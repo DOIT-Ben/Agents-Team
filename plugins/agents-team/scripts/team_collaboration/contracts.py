@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Any
 
 from .diagnostics import Finding
+from .evidence import validate_gate_evidence
 
 
 ISSUE_SECTIONS = ["Goal", "必须完成", "验收门禁", "任务边界", "风险等级", "依赖与阻塞条件", "失败处理与回滚"]
@@ -64,6 +65,30 @@ def _status_from_labels(labels: Iterable[str]) -> str:
 def _scalar(block: str, name: str) -> str:
     match = re.search(rf"(?mi)^\s*(?:[-*]\s+)?{re.escape(name)}\s*[：:]\s*(.+?)\s*$", block or "")
     return match.group(1).strip() if match else ""
+
+
+def _integer_scalar(block: str, name: str) -> int | str:
+    value = _scalar(block, name)
+    try:
+        return int(value)
+    except ValueError:
+        return value
+
+
+def _gate_evidence_record(block: str) -> dict[str, Any]:
+    record: dict[str, Any] = {}
+    for field in ("gate", "command", "artifact", "timestamp", "commitSha"):
+        value = _scalar(block, field)
+        if value:
+            record[field] = value.strip("`")
+    for field in ("exitCode", "passed", "failed", "skipped"):
+        value = _integer_scalar(block, field)
+        if value != "":
+            record[field] = value
+    skip_reason = _scalar(block, "skipReason")
+    if skip_reason:
+        record["skipReason"] = skip_reason
+    return record
 
 
 def _normalize_repo_path(value: str) -> str:
@@ -250,7 +275,6 @@ def validate_pr_contract(
             findings.extend(validate_l3_approval_event(approval_event, current_sha=current_sha))
 
     tests = sections.get("测试门禁", "")
-    if not re.search(r"exitCode\s*[：:]\s*0\b", tests, re.IGNORECASE) or not re.search(r"failed\s*[：:]\s*0\b", tests, re.IGNORECASE):
-        findings.append(Finding("AT-GATE-004", "error", "PR/测试门禁", "test evidence lacks successful exit code or failure count", "record exact command, exitCode, passed, failed and skipped counts", tests))
+    findings.extend(validate_gate_evidence([_gate_evidence_record(tests)], current_sha=current_sha))
 
     return findings
