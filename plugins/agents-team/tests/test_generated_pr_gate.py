@@ -37,6 +37,9 @@ L2
 ## Worker ownership
 - plugins/agents-team/scripts/team_collaboration/
 - plugins/agents-team/tests/
+## Risk path classification
+- plugins/agents-team/scripts/team_collaboration/: protectedFiles
+- plugins/agents-team/tests/: standard
 ## 必须完成项证据
 - [x] 上传成功测试通过
 ## 测试门禁
@@ -123,6 +126,26 @@ class GeneratedPrGateTests(unittest.TestCase):
     def test_worker_diff_boundary_blocks_unowned_files(self):
         errors = MODULE.validate(VALID_PR, VALID_ISSUE, "abc123", changed_files=["README.md"])
         self.assertTrue(any("outside Worker ownership" in error for error in errors))
+
+    def test_l2_requires_risk_path_classification_for_changed_files(self):
+        body = VALID_PR.replace("## Risk path classification\n- plugins/agents-team/scripts/team_collaboration/: protectedFiles\n- plugins/agents-team/tests/: standard\n", "")
+        errors = MODULE.validate(
+            body,
+            VALID_ISSUE,
+            "abc123",
+            changed_files=["plugins/agents-team/scripts/team_collaboration/contracts.py"],
+        )
+        self.assertTrue(any("Risk path classification" in error for error in errors))
+
+    def test_l2_blocks_unclassified_changed_file(self):
+        errors = MODULE.validate(VALID_PR, VALID_ISSUE, "abc123", changed_files=["README.md"])
+        self.assertTrue(any("not covered by Risk path classification" in error for error in errors))
+
+    def test_l1_does_not_require_risk_path_classification(self):
+        body = VALID_PR.replace("L2", "L1").replace("## Risk path classification\n- plugins/agents-team/scripts/team_collaboration/: protectedFiles\n- plugins/agents-team/tests/: standard\n", "")
+        issue = VALID_ISSUE.replace("L2", "L1")
+        errors = MODULE.validate(body, issue, "abc123", changed_files=["README.md"])
+        self.assertFalse(any("Risk path classification" in error for error in errors))
 
     def test_stale_commit_evidence_is_rejected(self):
         errors = MODULE.validate(VALID_PR, VALID_ISSUE, "def456")

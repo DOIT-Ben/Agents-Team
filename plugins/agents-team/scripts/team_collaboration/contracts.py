@@ -15,6 +15,7 @@ PR_SECTIONS = ["关联任务", "风险等级", "实际改动", "范围偏差", "
 HEADING = re.compile(r"^#{2,6}\s+(.+?)\s*$", re.MULTILINE)
 CHECKBOX = re.compile(r"^\s*[-*]\s+\[([ xX])\]\s+(.+)$", re.MULTILINE)
 ISSUE_LINK = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)\b", re.IGNORECASE)
+RISK_PATH_CATEGORIES = {"standard", "criticalPaths", "protectedFiles", "productionPaths", "realProviderPaths"}
 
 
 def parse_sections(body: str) -> dict[str, str]:
@@ -116,6 +117,40 @@ def validate_worker_diff_boundary(changed_files: Iterable[str], ownership_block:
     return findings
 
 
+def _risk_path_entries(block: str) -> tuple[list[tuple[str, str]], list[str]]:
+    entries: list[tuple[str, str]] = []
+    invalid: list[str] = []
+    for line in (block or "").splitlines():
+        match = re.match(r"^\s*[-*]\s+(.+?)\s*[：:]\s*([A-Za-z][A-Za-z0-9_-]*)\s*$", line)
+        if not match:
+            continue
+        path = _normalize_repo_path(match.group(1))
+        category = match.group(2).strip()
+        if not path or category not in RISK_PATH_CATEGORIES:
+            invalid.append(line.strip())
+            continue
+        entries.append((path, category))
+    return entries, invalid
+
+
+def validate_risk_path_classification(risk: str, changed_files: Iterable[str] | None, classification_block: str) -> list[Finding]:
+    if risk not in {"L2", "L3"}:
+        return []
+    entries, invalid = _risk_path_entries(classification_block)
+    if not entries:
+        return [Finding("AT-CONTRACT-011", "error", "PR/Risk path classification", "L2/L3 PR is missing Risk path classification", "classify each changed path as standard, criticalPaths, protectedFiles, productionPaths or realProviderPaths", classification_block)]
+    findings = [
+        Finding("AT-CONTRACT-011", "error", "PR/Risk path classification", f"invalid risk path classification: {item}", "use '<repo-relative-path>: <category>' with an allowed category", item)
+        for item in invalid
+    ]
+    if changed_files is not None:
+        classified_paths = [path for path, _ in entries]
+        for changed_file in changed_files:
+            if not _path_is_owned(changed_file, classified_paths):
+                findings.append(Finding("AT-CONTRACT-011", "error", "PR/Risk path classification", f"changed file is not covered by Risk path classification: {changed_file}", "classify the changed file or narrow the diff", changed_file))
+    return findings
+
+
 def _valid_timestamp(value: Any) -> bool:
     if not isinstance(value, str) or not value.strip():
         return False
@@ -190,6 +225,7 @@ def validate_pr_contract(
         findings.extend(validate_worker_diff_boundary(changed_files, sections.get("Worker ownership", "")))
 
     risk = _risk_from(sections, labels)
+    findings.extend(validate_risk_path_classification(risk, changed_files, sections.get("Risk path classification", "")))
     qa = sections.get("QA 独立性与结论", "")
     if risk in {"L2", "L3"}:
         independent = bool(re.search(r"独立上下文\s*[：:]\s*是", qa))

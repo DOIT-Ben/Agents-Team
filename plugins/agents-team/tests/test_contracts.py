@@ -49,6 +49,10 @@ L2
 - plugins/agents-team/scripts/team_collaboration/
 - plugins/agents-team/tests/
 
+## Risk path classification
+- plugins/agents-team/scripts/team_collaboration/: protectedFiles
+- plugins/agents-team/tests/: standard
+
 ## 必须完成项证据
 - [x] 上传成功：测试 `test_upload_success`
 
@@ -144,6 +148,33 @@ class ContractTests(unittest.TestCase):
             changed_files=["README.md"],
         )
         self.assertIn("AT-BOUNDARY-001", [finding.code for finding in findings])
+
+    def test_l2_pr_requires_risk_path_classification_for_changed_files(self):
+        body = VALID_PR.replace("## Risk path classification\n- plugins/agents-team/scripts/team_collaboration/: protectedFiles\n- plugins/agents-team/tests/: standard\n\n", "")
+        findings = validate_pr_contract(
+            body,
+            VALID_ISSUE,
+            ["risk:L2"],
+            current_sha=HEAD_SHA,
+            changed_files=["plugins/agents-team/scripts/team_collaboration/contracts.py"],
+        )
+        self.assertIn("AT-CONTRACT-011", [finding.code for finding in findings])
+
+    def test_l2_pr_blocks_unclassified_changed_file(self):
+        findings = validate_pr_contract(
+            VALID_PR,
+            VALID_ISSUE,
+            ["risk:L2"],
+            current_sha=HEAD_SHA,
+            changed_files=["README.md"],
+        )
+        self.assertIn("AT-CONTRACT-011", [finding.code for finding in findings])
+
+    def test_l1_pr_does_not_require_risk_path_classification(self):
+        issue = VALID_ISSUE.replace("L2", "L1")
+        body = VALID_PR.replace("L2", "L1").replace("## Risk path classification\n- plugins/agents-team/scripts/team_collaboration/: protectedFiles\n- plugins/agents-team/tests/: standard\n\n", "")
+        findings = validate_pr_contract(body, issue, ["risk:L1"], current_sha=HEAD_SHA, changed_files=["README.md"])
+        self.assertNotIn("AT-CONTRACT-011", [finding.code for finding in findings])
 
     def test_pr_without_issue_link_is_blocked(self):
         findings = validate_pr_contract(VALID_PR.replace("Closes #123", "none"), VALID_ISSUE, ["risk:L2"])
