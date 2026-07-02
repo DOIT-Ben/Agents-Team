@@ -31,7 +31,7 @@ class TemplateContractTests(unittest.TestCase):
         text = (TEMPLATES / "pull_request_template.md").read_text(encoding="utf-8")
         headings = [
             "关联任务", "风险等级", "实际改动", "范围偏差", "必须完成项证据",
-            "测试门禁", "行为验收", "QA 独立性与结论", "剩余风险", "回滚方式", "失败记录",
+            "Worker ownership", "测试门禁", "行为验收", "QA 独立性与结论", "剩余风险", "回滚方式", "失败记录",
         ]
         for heading in headings:
             self.assertIn(f"## {heading}", text)
@@ -41,10 +41,12 @@ class TemplateContractTests(unittest.TestCase):
             self.assertIn(field, text)
         for field in ["L3 approval event", "actor", "scope", "risk", "commitSha"]:
             self.assertIn(field, text)
+        for field in ["仓库相对路径", "changed files", "Gate 阻断"]:
+            self.assertIn(field, text)
 
     def test_generated_gate_validates_pr_issue_and_current_head_evidence(self):
         validator = (TEMPLATES / "validate_pr_contract.py").read_text(encoding="utf-8")
-        for phrase in ["GITHUB_TOKEN", "head.sha", "commitSha", "timestamp", "Issue", "check-runs"]:
+        for phrase in ["GITHUB_TOKEN", "head.sha", "commitSha", "timestamp", "Issue", "check-runs", "pulls/{number}/files", "changed_files"]:
             self.assertIn(phrase, validator)
         workflow = (TEMPLATES / "collaboration-gate.yml").read_text(encoding="utf-8")
         self.assertNotIn("\n  push:\n", workflow)

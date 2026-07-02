@@ -34,6 +34,9 @@ L2
 实现上传流程。
 ## 范围偏差
 无偏差。
+## Worker ownership
+- plugins/agents-team/scripts/team_collaboration/
+- plugins/agents-team/tests/
 ## 必须完成项证据
 - [x] 上传成功测试通过
 ## 测试门禁
@@ -104,6 +107,22 @@ VALID_L3_APPROVAL = {
 class GeneratedPrGateTests(unittest.TestCase):
     def test_valid_current_head_contract_passes(self):
         self.assertEqual(MODULE.validate(VALID_PR, VALID_ISSUE, "abc123"), [])
+
+    def test_worker_diff_boundary_allows_owned_files(self):
+        errors = MODULE.validate(
+            VALID_PR,
+            VALID_ISSUE,
+            "abc123",
+            changed_files=[
+                "plugins/agents-team/scripts/team_collaboration/contracts.py",
+                "plugins/agents-team/tests/test_generated_pr_gate.py",
+            ],
+        )
+        self.assertEqual(errors, [])
+
+    def test_worker_diff_boundary_blocks_unowned_files(self):
+        errors = MODULE.validate(VALID_PR, VALID_ISSUE, "abc123", changed_files=["README.md"])
+        self.assertTrue(any("outside Worker ownership" in error for error in errors))
 
     def test_stale_commit_evidence_is_rejected(self):
         errors = MODULE.validate(VALID_PR, VALID_ISSUE, "def456")

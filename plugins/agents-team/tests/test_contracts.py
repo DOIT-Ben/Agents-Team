@@ -45,6 +45,10 @@ L2
 ## 范围偏差
 无偏差。
 
+## Worker ownership
+- plugins/agents-team/scripts/team_collaboration/
+- plugins/agents-team/tests/
+
 ## 必须完成项证据
 - [x] 上传成功：测试 `test_upload_success`
 
@@ -117,6 +121,29 @@ class ContractTests(unittest.TestCase):
 
     def test_valid_pr_contract_has_no_findings(self):
         self.assertEqual(validate_pr_contract(VALID_PR, VALID_ISSUE, ["risk:L2", "status:qa-pending"], current_sha=HEAD_SHA), [])
+
+    def test_worker_diff_boundary_allows_owned_files(self):
+        findings = validate_pr_contract(
+            VALID_PR,
+            VALID_ISSUE,
+            ["risk:L2"],
+            current_sha=HEAD_SHA,
+            changed_files=[
+                "plugins/agents-team/scripts/team_collaboration/contracts.py",
+                "plugins/agents-team/tests/test_contracts.py",
+            ],
+        )
+        self.assertEqual(findings, [])
+
+    def test_worker_diff_boundary_blocks_unowned_files(self):
+        findings = validate_pr_contract(
+            VALID_PR,
+            VALID_ISSUE,
+            ["risk:L2"],
+            current_sha=HEAD_SHA,
+            changed_files=["README.md"],
+        )
+        self.assertIn("AT-BOUNDARY-001", [finding.code for finding in findings])
 
     def test_pr_without_issue_link_is_blocked(self):
         findings = validate_pr_contract(VALID_PR.replace("Closes #123", "none"), VALID_ISSUE, ["risk:L2"])

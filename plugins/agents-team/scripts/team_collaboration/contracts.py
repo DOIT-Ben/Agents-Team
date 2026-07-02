@@ -11,7 +11,7 @@ from .diagnostics import Finding
 
 
 ISSUE_SECTIONS = ["Goal", "必须完成", "验收门禁", "任务边界", "风险等级", "依赖与阻塞条件", "失败处理与回滚"]
-PR_SECTIONS = ["关联任务", "风险等级", "实际改动", "范围偏差", "必须完成项证据", "测试门禁", "行为验收", "QA 独立性与结论", "剩余风险", "回滚方式", "失败记录"]
+PR_SECTIONS = ["关联任务", "风险等级", "实际改动", "范围偏差", "Worker ownership", "必须完成项证据", "测试门禁", "行为验收", "QA 独立性与结论", "剩余风险", "回滚方式", "失败记录"]
 HEADING = re.compile(r"^#{2,6}\s+(.+?)\s*$", re.MULTILINE)
 CHECKBOX = re.compile(r"^\s*[-*]\s+\[([ xX])\]\s+(.+)$", re.MULTILINE)
 ISSUE_LINK = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)\b", re.IGNORECASE)
@@ -63,6 +63,57 @@ def _status_from_labels(labels: Iterable[str]) -> str:
 def _scalar(block: str, name: str) -> str:
     match = re.search(rf"(?mi)^\s*(?:[-*]\s+)?{re.escape(name)}\s*[：:]\s*(.+?)\s*$", block or "")
     return match.group(1).strip() if match else ""
+
+
+def _normalize_repo_path(value: str) -> str:
+    raw = value.strip().strip("`'\"")
+    if not raw or re.match(r"^[A-Za-z]:[\\/]", raw) or raw.startswith(("/", "\\")):
+        return ""
+    directory = raw.endswith(("/", "\\"))
+    normalized = raw.replace("\\", "/")
+    parts = [part for part in normalized.split("/") if part and part != "."]
+    if not parts or any(part == ".." for part in parts):
+        return ""
+    path = "/".join(parts)
+    return f"{path}/" if directory and not path.endswith("/") else path
+
+
+def _ownership_paths(block: str) -> list[str]:
+    paths: list[str] = []
+    for line in (block or "").splitlines():
+        match = re.match(r"^\s*[-*]\s+(.+?)\s*$", line)
+        if not match:
+            continue
+        item = match.group(1).strip()
+        if item.lower().startswith(("allowed:", "owner:", "task:")):
+            continue
+        path = _normalize_repo_path(item)
+        if path:
+            paths.append(path)
+    return paths
+
+
+def _path_is_owned(path: str, allowed_paths: Iterable[str]) -> bool:
+    normalized = _normalize_repo_path(path)
+    if not normalized:
+        return False
+    for allowed in allowed_paths:
+        if allowed.endswith("/") and normalized.startswith(allowed):
+            return True
+        if normalized == allowed:
+            return True
+    return False
+
+
+def validate_worker_diff_boundary(changed_files: Iterable[str], ownership_block: str) -> list[Finding]:
+    allowed_paths = _ownership_paths(ownership_block)
+    if not allowed_paths:
+        return [Finding("AT-BOUNDARY-001", "error", "PR/Worker ownership", "Worker ownership has no allowed paths", "declare allowed repository-relative files or directories", ownership_block)]
+    findings: list[Finding] = []
+    for changed_file in changed_files:
+        if not _path_is_owned(changed_file, allowed_paths):
+            findings.append(Finding("AT-BOUNDARY-001", "error", "PR/Worker ownership", f"changed file is outside Worker ownership: {changed_file}", "move the change into the declared ownership or update the approved boundary", changed_file))
+    return findings
 
 
 def _valid_timestamp(value: Any) -> bool:
@@ -121,6 +172,7 @@ def validate_pr_contract(
     *,
     current_sha: str | None = None,
     approval_event: dict[str, Any] | None = None,
+    changed_files: Iterable[str] | None = None,
 ) -> list[Finding]:
     sections = parse_sections(body)
     findings = [_missing(section, "PR contract") for section in PR_SECTIONS if not sections.get(section, "").strip()]
@@ -133,6 +185,9 @@ def validate_pr_contract(
     evidence_items = CHECKBOX.findall(sections.get("必须完成项证据", ""))
     if not evidence_items or any(mark.lower() != "x" for mark, _ in evidence_items):
         findings.append(Finding("AT-CONTRACT-004", "error", "PR/必须完成项证据", "mandatory evidence checklist is incomplete", "map every mandatory item to checked observable evidence", sections.get("必须完成项证据", "")))
+
+    if changed_files is not None:
+        findings.extend(validate_worker_diff_boundary(changed_files, sections.get("Worker ownership", "")))
 
     risk = _risk_from(sections, labels)
     qa = sections.get("QA 独立性与结论", "")
