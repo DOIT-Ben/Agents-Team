@@ -12,8 +12,8 @@ TRANSITIONS = {
     "draft": {"ready"},
     "ready": {"in-progress"},
     "in-progress": {"implemented"},
-    "implemented": {"qa-pending"},
-    "qa-pending": {"pass", "fail"},
+    "implemented": {"verifying"},
+    "verifying": {"pass", "fail"},
     "pass": {"mergeable"},
     "fail": {"in-progress"},
     "mergeable": set(),
@@ -28,7 +28,7 @@ def status_from_labels(labels: Iterable[str]) -> tuple[str | None, list[Finding]
             "error",
             "GitHub labels",
             "exactly one recognized status label is required",
-            "apply one status:draft|ready|in-progress|implemented|qa-pending|pass|fail|mergeable label",
+            "apply one status:draft|ready|in-progress|implemented|verifying|pass|fail|mergeable label",
             ", ".join(statuses) or "none",
         )]
     return statuses[0], []

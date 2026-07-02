@@ -47,7 +47,16 @@ def valid_timestamp(value: str) -> bool:
     return bool(value)
 
 
-def validate(pr_body: str, issue_body: str, head_sha: str) -> list[str]:
+def status_from_labels(labels: list[str]) -> str:
+    for label in labels:
+        match = re.search(r"\bstatus:([a-z-]+)\b", label, re.IGNORECASE)
+        if match:
+            return match.group(1).lower()
+    return ""
+
+
+def validate(pr_body: str, issue_body: str, head_sha: str, labels: list[str] | None = None) -> list[str]:
+    labels = labels or []
     errors: list[str] = []
     pr = sections(pr_body)
     issue = sections(issue_body)
@@ -95,6 +104,8 @@ def validate(pr_body: str, issue_body: str, head_sha: str) -> list[str]:
         qa_context = scalar(qa, "QA 上下文")
         if implementation_context and qa_context and implementation_context == qa_context:
             errors.append("QA context must differ from implementation context")
+        if status_from_labels(labels) == "pass" and scalar(qa, "验证阶段").lower() != "verify":
+            errors.append("PASS status requires explicit verify stage")
     if re.search(r"\bL3\b", risk, re.IGNORECASE):
         for field in L3_REQUIRED_FIELDS:
             if not re.search(rf"(?mi)^\s*{re.escape(field)}\s*[：:]\s*\S+", issue_body or ""):
@@ -165,6 +176,7 @@ def main() -> int:
 
     pr_body = str(pull_request.get("body") or "")
     head_sha = str((pull_request.get("head") or {}).get("sha") or "")  # head.sha
+    labels = [str(label.get("name") or "") for label in (pull_request.get("labels") or []) if isinstance(label, dict)]
     repo = str((event.get("repository") or {}).get("full_name") or os.environ.get("GITHUB_REPOSITORY") or "")
     linked = ISSUE_LINK.search(pr_body)
     if not head_sha or not repo or linked is None:
@@ -181,7 +193,7 @@ def main() -> int:
             except RuntimeError as exc:
                 print(f"Agents-Team gate blocked: {exc}")
                 return 1
-        errors = validate(pr_body, issue_body, head_sha)
+        errors = validate(pr_body, issue_body, head_sha, labels=labels)
         if not token:
             print("Agents-Team gate blocked: GITHUB_TOKEN is required")
             return 1

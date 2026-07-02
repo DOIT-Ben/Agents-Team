@@ -126,6 +126,13 @@ class ContractTests(unittest.TestCase):
         findings = validate_pr_contract(body, VALID_ISSUE, ["risk:L2"], current_sha=HEAD_SHA)
         self.assertIn("AT-QA-005", [finding.code for finding in findings])
 
+    def test_pass_status_requires_explicit_verify_stage(self):
+        findings = validate_pr_contract(VALID_PR, VALID_ISSUE, ["risk:L2", "status:pass"], current_sha=HEAD_SHA)
+        self.assertIn("AT-QA-006", [finding.code for finding in findings])
+
+        verified = VALID_PR.replace("结论：PASS", "验证阶段：verify\n结论：PASS")
+        self.assertEqual(validate_pr_contract(verified, VALID_ISSUE, ["risk:L2", "status:pass"], current_sha=HEAD_SHA), [])
+
 
 if __name__ == "__main__":
     unittest.main()

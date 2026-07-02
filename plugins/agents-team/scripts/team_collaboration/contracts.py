@@ -48,6 +48,14 @@ def _risk_from(sections: dict[str, str], labels: Iterable[str] = ()) -> str:
     return ""
 
 
+def _status_from_labels(labels: Iterable[str]) -> str:
+    for label in labels:
+        match = re.search(r"\bstatus:([a-z-]+)\b", label, re.IGNORECASE)
+        if match:
+            return match.group(1).lower()
+    return ""
+
+
 def _scalar(block: str, name: str) -> str:
     match = re.search(rf"(?mi)^\s*(?:[-*]\s+)?{re.escape(name)}\s*[：:]\s*(.+?)\s*$", block or "")
     return match.group(1).strip() if match else ""
@@ -112,6 +120,8 @@ def validate_pr_contract(
         qa_context = _scalar(qa, "QA 上下文")
         if implementation_context and qa_context and implementation_context == qa_context:
             findings.append(Finding("AT-QA-005", "error", "PR/QA 独立性与结论", "QA context matches implementation context", "run QA in a separate context and record both context identifiers", qa_context))
+        if _status_from_labels(labels) == "pass" and _scalar(qa, "验证阶段").lower() != "verify":
+            findings.append(Finding("AT-QA-006", "error", "PR/QA 独立性与结论", "PASS status was declared without an explicit verify stage", "record 验证阶段：verify from the verifier before status:pass", qa))
 
     tests = sections.get("测试门禁", "")
     if not re.search(r"exitCode\s*[：:]\s*0\b", tests, re.IGNORECASE) or not re.search(r"failed\s*[：:]\s*0\b", tests, re.IGNORECASE):

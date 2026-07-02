@@ -115,6 +115,13 @@ class GeneratedPrGateTests(unittest.TestCase):
         errors = MODULE.validate(body, VALID_ISSUE, "abc123")
         self.assertTrue(any("QA context must differ" in error for error in errors))
 
+    def test_pass_status_requires_explicit_verify_stage(self):
+        errors = MODULE.validate(VALID_PR, VALID_ISSUE, "abc123", labels=["status:pass"])
+        self.assertTrue(any("verify stage" in error for error in errors))
+
+        verified = VALID_PR.replace("结论：PASS", "验证阶段：verify\n结论：PASS")
+        self.assertEqual(MODULE.validate(verified, VALID_ISSUE, "abc123", labels=["status:pass"]), [])
+
     def test_current_head_github_checks_pass(self):
         self.assertEqual(MODULE.validate_check_runs(VALID_CHECK_RUNS, "abc123"), [])
 

@@ -27,6 +27,11 @@ class RoutingTests(unittest.TestCase):
         self.assertEqual(decision.skill, "review-team-goal")
         self.assertEqual(decision.role, "code-reviewer")
 
+    def test_verifying_goal_routes_to_review(self):
+        decision = route_work(intent="verify completed change", status="verifying", risk="L2")
+        self.assertEqual(decision.skill, "review-team-goal")
+        self.assertEqual(decision.role, "code-reviewer")
+
     def test_passed_goal_routes_to_shipping(self):
         decision = route_work(intent="prepare delivery", status="pass", risk="L3")
         self.assertEqual(decision.skill, "ship-team-goal")
