@@ -25,7 +25,7 @@ def evaluate_goal_workflow(
     route = route_work(intent=intent, status=status, risk=risk, parallel=parallel)
     provider = select_provider(route.phase, available_skills=available_skills)
     findings = validate_gate_evidence(gate_records, current_sha=current_sha)
-    findings.extend(validate_qa_evidence(qa_evidence, risk=route.risk))
+    findings.extend(validate_qa_evidence(qa_evidence, risk=route.risk, current_sha=current_sha))
     summary = summarize_findings(findings)
     return {
         "route": asdict(route),

@@ -48,6 +48,11 @@ def _risk_from(sections: dict[str, str], labels: Iterable[str] = ()) -> str:
     return ""
 
 
+def _scalar(block: str, name: str) -> str:
+    match = re.search(rf"(?mi)^\s*(?:[-*]\s+)?{re.escape(name)}\s*[：:]\s*(.+?)\s*$", block or "")
+    return match.group(1).strip() if match else ""
+
+
 def validate_issue_contract(body: str) -> list[Finding]:
     sections = parse_sections(body)
     findings = [_missing(section, "Issue contract") for section in ISSUE_SECTIONS if not sections.get(section, "").strip()]
@@ -69,7 +74,13 @@ def validate_issue_contract(body: str) -> list[Finding]:
     return findings
 
 
-def validate_pr_contract(body: str, issue_body: str, labels: Iterable[str]) -> list[Finding]:
+def validate_pr_contract(
+    body: str,
+    issue_body: str,
+    labels: Iterable[str],
+    *,
+    current_sha: str | None = None,
+) -> list[Finding]:
     sections = parse_sections(body)
     findings = [_missing(section, "PR contract") for section in PR_SECTIONS if not sections.get(section, "").strip()]
     if extract_linked_issue(body) is None:
@@ -90,6 +101,17 @@ def validate_pr_contract(body: str, issue_body: str, labels: Iterable[str]) -> l
             findings.append(Finding("AT-QA-001", "error", "PR/QA 独立性与结论", "QA independence is missing or false", "run QA in a fresh context and record 独立上下文：是", qa))
         if not re.search(r"结论\s*[：:]\s*PASS\b", qa, re.IGNORECASE):
             findings.append(Finding("AT-QA-002", "error", "PR/QA 独立性与结论", "QA verdict is not PASS", "resolve defects and rerun independent QA", qa))
+        required_qa = ["验收者", "实现上下文", "QA 上下文", "commitSha", "证据"]
+        missing_qa = [field for field in required_qa if not _scalar(qa, field)]
+        if missing_qa:
+            findings.append(Finding("AT-QA-003", "error", "PR/QA 独立性与结论", f"missing QA evidence fields: {', '.join(missing_qa)}", "record verifier, separate QA context, commit SHA and evidence artifact", qa))
+        qa_commit_sha = _scalar(qa, "commitSha")
+        if qa_commit_sha and current_sha is not None and qa_commit_sha != current_sha:
+            findings.append(Finding("AT-QA-004", "error", "PR/QA 独立性与结论", f"QA evidence belongs to commit {qa_commit_sha}, not current head {current_sha}", "rerun independent QA on the current PR head", qa_commit_sha))
+        implementation_context = _scalar(qa, "实现上下文")
+        qa_context = _scalar(qa, "QA 上下文")
+        if implementation_context and qa_context and implementation_context == qa_context:
+            findings.append(Finding("AT-QA-005", "error", "PR/QA 独立性与结论", "QA context matches implementation context", "run QA in a separate context and record both context identifiers", qa_context))
 
     tests = sections.get("测试门禁", "")
     if not re.search(r"exitCode\s*[：:]\s*0\b", tests, re.IGNORECASE) or not re.search(r"failed\s*[：:]\s*0\b", tests, re.IGNORECASE):

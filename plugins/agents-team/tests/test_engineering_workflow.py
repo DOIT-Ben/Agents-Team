@@ -25,6 +25,16 @@ VALID_GATE = {
     "commitSha": "abc123",
 }
 
+VALID_QA = {
+    "independent": True,
+    "verdict": "PASS",
+    "verifier": "independent-verifier",
+    "implementationContext": "implement-session-1",
+    "qaContext": "qa-session-1",
+    "commitSha": "abc123",
+    "artifact": "https://github.com/example/actions/runs/1",
+}
+
 
 class EngineeringWorkflowTests(unittest.TestCase):
     def test_initialized_l2_goal_blocks_bad_evidence_then_accepts_current_evidence(self):
@@ -41,7 +51,7 @@ class EngineeringWorkflowTests(unittest.TestCase):
                 risk="L2",
                 available_skills=set(),
                 gate_records=[{"gate": "test:unit"}],
-                qa_evidence={"independent": True, "verdict": "PASS"},
+                qa_evidence=VALID_QA,
                 current_sha="abc123",
             )
             self.assertEqual(blocked["route"]["skill"], "plan-team-goal")
@@ -53,7 +63,7 @@ class EngineeringWorkflowTests(unittest.TestCase):
                 risk="L2",
                 available_skills=set(),
                 gate_records=[VALID_GATE],
-                qa_evidence={"independent": True, "verdict": "PASS"},
+                qa_evidence=VALID_QA,
                 current_sha="abc123",
             )
             self.assertEqual(healthy["provider"]["provider"], "builtin")
