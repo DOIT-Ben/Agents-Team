@@ -37,7 +37,7 @@ class TemplateContractTests(unittest.TestCase):
             self.assertIn(f"## {heading}", text)
         for field in ["command", "exitCode", "passed", "failed", "skipped", "timestamp", "commitSha", "artifact"]:
             self.assertIn(field, text)
-        for field in ["验收者", "实现上下文", "QA 上下文", "证据"]:
+        for field in ["验收者", "实现上下文", "QA 上下文", "验证阶段", "证据"]:
             self.assertIn(field, text)
 
     def test_generated_gate_validates_pr_issue_and_current_head_evidence(self):

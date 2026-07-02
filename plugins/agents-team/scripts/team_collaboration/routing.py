@@ -45,7 +45,7 @@ STATE_PHASE = {
     "ready": "plan",
     "in-progress": "build",
     "implemented": "review",
-    "qa-pending": "review",
+    "verifying": "review",
     "pass": "ship",
     "mergeable": "ship",
 }

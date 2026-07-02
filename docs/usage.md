@@ -59,6 +59,7 @@ plan-team-goal -> build-team-goal -> review-team-goal -> ship-team-goal
 没有独立上下文时不能伪造独立 QA。任何必须完成项无证据、指定测试失败、P0/P1 未解决或任务边界违规都必须 FAIL。
 
 L2/L3 的 PR 必须记录可验证的 QA 证据：独立上下文、验收者、实现上下文、QA 上下文、QA 复核的当前 `commitSha`、PASS/FAIL/BLOCKED 结论和证据链接。QA 上下文必须与实现上下文不同，`commitSha` 必须等于当前 PR head。
+生命周期标签顺序为 `status:draft -> status:ready -> status:in-progress -> status:implemented -> status:verifying -> status:pass|status:fail -> status:mergeable`；`status:pass` 必须由 verifier 在 QA 区块记录 `验证阶段：verify` 后才允许出现。
 
 ## 本地反馈导出
 
