@@ -46,6 +46,9 @@ artifact: <GitHub Actions run or inspectable artifact URL>
 
 - 独立上下文：是 / 否
 - 验收者：
+- 实现上下文：
+- QA 上下文：
+- commitSha：<exact current PR head SHA verified by QA>
 - 结论：PASS / FAIL / BLOCKED
 - 证据：
 

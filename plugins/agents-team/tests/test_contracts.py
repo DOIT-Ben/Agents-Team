@@ -9,6 +9,8 @@ sys.path.insert(0, str(PLUGIN_ROOT / "scripts"))
 from team_collaboration.contracts import extract_linked_issue, validate_issue_contract, validate_pr_contract  # noqa: E402
 
 
+HEAD_SHA = "abc123"
+
 VALID_ISSUE = """### Goal
 用户可以完成一次可观察的上传流程。
 
@@ -58,7 +60,12 @@ L2
 
 ## QA 独立性与结论
 独立上下文：是
+验收者：independent-verifier
+实现上下文：implement-session-1
+QA 上下文：qa-session-1
+commitSha：abc123
 结论：PASS
+证据：https://github.com/example/actions/runs/1
 
 ## 剩余风险
 无已知剩余风险。
@@ -91,7 +98,7 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(extract_linked_issue(VALID_PR), 123)
 
     def test_valid_pr_contract_has_no_findings(self):
-        self.assertEqual(validate_pr_contract(VALID_PR, VALID_ISSUE, ["risk:L2", "status:qa-pending"]), [])
+        self.assertEqual(validate_pr_contract(VALID_PR, VALID_ISSUE, ["risk:L2", "status:qa-pending"], current_sha=HEAD_SHA), [])
 
     def test_pr_without_issue_link_is_blocked(self):
         findings = validate_pr_contract(VALID_PR.replace("Closes #123", "none"), VALID_ISSUE, ["risk:L2"])
@@ -104,6 +111,20 @@ class ContractTests(unittest.TestCase):
     def test_self_approved_qa_is_blocked(self):
         findings = validate_pr_contract(VALID_PR.replace("独立上下文：是", "独立上下文：否"), VALID_ISSUE, ["risk:L2"])
         self.assertIn("AT-QA-001", [finding.code for finding in findings])
+
+    def test_qa_pass_without_verifiable_fields_is_blocked(self):
+        body = VALID_PR.replace("验收者：independent-verifier\n", "").replace("QA 上下文：qa-session-1\n", "")
+        findings = validate_pr_contract(body, VALID_ISSUE, ["risk:L2"], current_sha=HEAD_SHA)
+        self.assertIn("AT-QA-003", [finding.code for finding in findings])
+
+    def test_stale_qa_commit_is_blocked(self):
+        findings = validate_pr_contract(VALID_PR, VALID_ISSUE, ["risk:L2"], current_sha="def456")
+        self.assertIn("AT-QA-004", [finding.code for finding in findings])
+
+    def test_qa_context_must_differ_from_implementation_context(self):
+        body = VALID_PR.replace("QA 上下文：qa-session-1", "QA 上下文：implement-session-1")
+        findings = validate_pr_contract(body, VALID_ISSUE, ["risk:L2"], current_sha=HEAD_SHA)
+        self.assertIn("AT-QA-005", [finding.code for finding in findings])
 
 
 if __name__ == "__main__":

@@ -35,7 +35,7 @@ def sections(body: str) -> dict[str, str]:
 
 
 def scalar(block: str, name: str) -> str:
-    match = re.search(rf"(?mi)^\s*{re.escape(name)}\s*:\s*(.+?)\s*$", block)
+    match = re.search(rf"(?mi)^\s*(?:[-*]\s+)?{re.escape(name)}\s*[：:]\s*(.+?)\s*$", block)
     return match.group(1).strip() if match else ""
 
 
@@ -85,6 +85,16 @@ def validate(pr_body: str, issue_body: str, head_sha: str) -> list[str]:
             errors.append("L2/L3 QA must use an independent context")
         if not re.search(r"结论\s*[：:]\s*PASS\b", qa, re.IGNORECASE):
             errors.append("L2/L3 QA verdict must be PASS")
+        missing_qa = [name for name in ("验收者", "实现上下文", "QA 上下文", "commitSha", "证据") if not scalar(qa, name)]
+        if missing_qa:
+            errors.append("L2/L3 QA evidence missing: " + ", ".join(missing_qa))
+        qa_commit_sha = scalar(qa, "commitSha")
+        if qa_commit_sha and qa_commit_sha != head_sha:
+            errors.append(f"QA evidence commitSha {qa_commit_sha} does not match head.sha {head_sha}")
+        implementation_context = scalar(qa, "实现上下文")
+        qa_context = scalar(qa, "QA 上下文")
+        if implementation_context and qa_context and implementation_context == qa_context:
+            errors.append("QA context must differ from implementation context")
     if re.search(r"\bL3\b", risk, re.IGNORECASE):
         for field in L3_REQUIRED_FIELDS:
             if not re.search(rf"(?mi)^\s*{re.escape(field)}\s*[：:]\s*\S+", issue_body or ""):

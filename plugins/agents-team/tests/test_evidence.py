@@ -21,6 +21,16 @@ VALID_GATE = {
     "commitSha": "abc123",
 }
 
+VALID_QA = {
+    "independent": True,
+    "verdict": "PASS",
+    "verifier": "independent-verifier",
+    "implementationContext": "implement-session-1",
+    "qaContext": "qa-session-1",
+    "commitSha": "abc123",
+    "artifact": "https://github.com/example/actions/runs/1",
+}
+
 
 class EvidenceTests(unittest.TestCase):
     def test_valid_gate_evidence_passes(self):
@@ -59,10 +69,27 @@ class EvidenceTests(unittest.TestCase):
         self.assertEqual(validate_gate_evidence([VALID_GATE], current_sha="abc123"), [])
 
     def test_l2_qa_requires_independent_pass(self):
-        findings = validate_qa_evidence({"independent": False, "verdict": "PASS"}, risk="L2")
+        findings = validate_qa_evidence({**VALID_QA, "independent": False}, risk="L2")
         self.assertIn("AT-QA-001", [finding.code for finding in findings])
-        findings = validate_qa_evidence({"independent": True, "verdict": "FAIL"}, risk="L2")
+        findings = validate_qa_evidence({**VALID_QA, "verdict": "FAIL"}, risk="L2")
         self.assertIn("AT-QA-002", [finding.code for finding in findings])
+
+    def test_l2_qa_requires_verifiable_context_fields(self):
+        evidence = {key: value for key, value in VALID_QA.items() if key not in {"verifier", "qaContext"}}
+        findings = validate_qa_evidence(evidence, risk="L2", current_sha="abc123")
+        self.assertIn("AT-QA-003", [finding.code for finding in findings])
+
+    def test_qa_evidence_from_another_commit_is_blocked(self):
+        findings = validate_qa_evidence(VALID_QA, risk="L2", current_sha="def456")
+        self.assertIn("AT-QA-004", [finding.code for finding in findings])
+
+    def test_qa_context_must_differ_from_implementation_context(self):
+        evidence = {**VALID_QA, "qaContext": "implement-session-1"}
+        findings = validate_qa_evidence(evidence, risk="L2", current_sha="abc123")
+        self.assertIn("AT-QA-005", [finding.code for finding in findings])
+
+    def test_current_commit_qa_evidence_passes(self):
+        self.assertEqual(validate_qa_evidence(VALID_QA, risk="L2", current_sha="abc123"), [])
 
 
 if __name__ == "__main__":

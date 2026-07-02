@@ -51,7 +51,12 @@ Expected behavior is covered by tests.
 ## QA 独立性与结论
 
 独立上下文: 是
+验收者: independent-verifier
+实现上下文: implement-session-1
+QA 上下文: qa-session-1
+commitSha: {HEAD_SHA}
 结论: PASS
+证据: https://github.com/DOIT-Ben/Agents-Team/actions/runs/1
 
 ## 剩余风险
 
@@ -135,6 +140,20 @@ class PrContractTests(unittest.TestCase):
         body = VALID_PR.replace("独立上下文: 是", "独立上下文: 否")
         errors = module.validate(body, VALID_ISSUE, HEAD_SHA)
         self.assertTrue(any("independent context" in error for error in errors))
+
+    def test_l2_requires_verifiable_qa_fields(self):
+        body = VALID_PR.replace("验收者: independent-verifier\n", "").replace("QA 上下文: qa-session-1\n", "")
+        errors = module.validate(body, VALID_ISSUE, HEAD_SHA)
+        self.assertTrue(any("QA evidence missing" in error for error in errors))
+
+    def test_stale_qa_evidence_fails(self):
+        errors = module.validate(VALID_PR, VALID_ISSUE, "different-head")
+        self.assertTrue(any("QA evidence commitSha" in error for error in errors))
+
+    def test_qa_context_must_differ_from_implementation_context(self):
+        body = VALID_PR.replace("QA 上下文: qa-session-1", "QA 上下文: implement-session-1")
+        errors = module.validate(body, VALID_ISSUE, HEAD_SHA)
+        self.assertTrue(any("QA context must differ" in error for error in errors))
 
     def test_l3_issue_requires_confirmation_plan_and_rollback(self):
         l3_issue = VALID_ISSUE.replace("L2", "L3 真实 Provider")

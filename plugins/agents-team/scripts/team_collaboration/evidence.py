@@ -67,7 +67,12 @@ def validate_gate_evidence(
     return findings
 
 
-def validate_qa_evidence(evidence: dict[str, Any], *, risk: str) -> list[Finding]:
+def validate_qa_evidence(
+    evidence: dict[str, Any],
+    *,
+    risk: str,
+    current_sha: str | None = None,
+) -> list[Finding]:
     if risk == "L1" and not evidence:
         return []
     findings: list[Finding] = []
@@ -75,4 +80,21 @@ def validate_qa_evidence(evidence: dict[str, Any], *, risk: str) -> list[Finding
         findings.append(Finding("AT-QA-001", "error", "QA 独立性与结论", "QA was not performed in an independent context", "run QA in a fresh context", "independent"))
     if str(evidence.get("verdict", "")).upper() != "PASS":
         findings.append(Finding("AT-QA-002", "error", "QA 独立性与结论", "QA verdict is not PASS", "resolve findings and rerun independent QA", "verdict"))
+    required = {
+        "verifier",
+        "implementationContext",
+        "qaContext",
+        "commitSha",
+        "artifact",
+    }
+    missing = sorted(field for field in required if not str(evidence.get(field, "")).strip())
+    if missing:
+        findings.append(Finding("AT-QA-003", "error", "QA 独立性与结论", f"missing QA evidence fields: {', '.join(missing)}", "record verifier, separate QA context, commit SHA and evidence artifact", ", ".join(missing)))
+    commit_sha = str(evidence.get("commitSha", "")).strip()
+    if commit_sha and current_sha is not None and commit_sha != current_sha:
+        findings.append(Finding("AT-QA-004", "error", "QA 独立性与结论", f"QA evidence belongs to commit {commit_sha}, not current head {current_sha}", "rerun independent QA on the current PR head", commit_sha))
+    implementation_context = str(evidence.get("implementationContext", "")).strip()
+    qa_context = str(evidence.get("qaContext", "")).strip()
+    if implementation_context and qa_context and implementation_context == qa_context:
+        findings.append(Finding("AT-QA-005", "error", "QA 独立性与结论", "QA context matches implementation context", "run QA in a separate context and record both context identifiers", qa_context))
     return findings

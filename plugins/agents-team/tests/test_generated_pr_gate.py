@@ -50,7 +50,12 @@ artifact: https://github.com/example/actions/runs/1
 预期和实际均返回资源标识。
 ## QA 独立性与结论
 独立上下文：是
+验收者：independent-verifier
+实现上下文：implement-session-1
+QA 上下文：qa-session-1
+commitSha：abc123
 结论：PASS
+证据：https://github.com/example/actions/runs/1
 ## 剩余风险
 无已知剩余风险。
 ## 回滚方式
@@ -75,6 +80,21 @@ class GeneratedPrGateTests(unittest.TestCase):
     def test_non_independent_qa_is_rejected(self):
         errors = MODULE.validate(VALID_PR.replace("独立上下文：是", "独立上下文：否"), VALID_ISSUE, "abc123")
         self.assertTrue(any("independent" in error for error in errors))
+
+    def test_missing_qa_evidence_fields_are_rejected(self):
+        body = VALID_PR.replace("验收者：independent-verifier\n", "").replace("QA 上下文：qa-session-1\n", "")
+        errors = MODULE.validate(body, VALID_ISSUE, "abc123")
+        self.assertTrue(any("QA evidence missing" in error for error in errors))
+
+    def test_stale_qa_evidence_is_rejected(self):
+        body = VALID_PR.replace("commitSha：abc123", "commitSha：old456")
+        errors = MODULE.validate(body, VALID_ISSUE, "abc123")
+        self.assertTrue(any("QA evidence commitSha" in error for error in errors))
+
+    def test_matching_qa_and_implementation_context_is_rejected(self):
+        body = VALID_PR.replace("QA 上下文：qa-session-1", "QA 上下文：implement-session-1")
+        errors = MODULE.validate(body, VALID_ISSUE, "abc123")
+        self.assertTrue(any("QA context must differ" in error for error in errors))
 
 if __name__ == "__main__":
     unittest.main()
