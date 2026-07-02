@@ -59,6 +59,20 @@ plan-team-goal -> build-team-goal -> review-team-goal -> ship-team-goal
 
 L2/L3 的 PR 必须记录可验证的 QA 证据：独立上下文、验收者、实现上下文、QA 上下文、QA 复核的当前 `commitSha`、PASS/FAIL/BLOCKED 结论和证据链接。QA 上下文必须与实现上下文不同，`commitSha` 必须等于当前 PR head。
 
+## 本地反馈导出
+
+反馈导出默认只在 stdout 预览脱敏后的 JSON，不写文件、不上传、不创建 Issue：
+
+```bash
+python PLUGIN_ROOT/scripts/export_feedback.py feedback.json --output feedback-redacted.json
+```
+
+确认预览内容后，使用 `--apply` 才会写入本地导出文件：
+
+```bash
+python PLUGIN_ROOT/scripts/export_feedback.py feedback.json --output feedback-redacted.json --apply
+```
+
 ## 管理
 
 ```bash
