@@ -28,6 +28,11 @@ Implementation summary.
 
 None.
 
+## Worker ownership
+
+- plugins/agents-team/scripts/team_collaboration/
+- plugins/agents-team/tests/
+
 ## 必须完成项证据
 
 - item: test output
@@ -128,6 +133,22 @@ class PrContractTests(unittest.TestCase):
     def test_valid_pr_and_issue_pass(self):
         errors = module.validate(VALID_PR, VALID_ISSUE, HEAD_SHA)
         self.assertEqual(errors, [])
+
+    def test_worker_diff_boundary_allows_owned_files(self):
+        errors = module.validate(
+            VALID_PR,
+            VALID_ISSUE,
+            HEAD_SHA,
+            changed_files=[
+                "plugins/agents-team/scripts/team_collaboration/contracts.py",
+                "plugins/agents-team/tests/test_pr_contract.py",
+            ],
+        )
+        self.assertEqual(errors, [])
+
+    def test_worker_diff_boundary_blocks_unowned_files(self):
+        errors = module.validate(VALID_PR, VALID_ISSUE, HEAD_SHA, changed_files=["README.md"])
+        self.assertTrue(any("outside Worker ownership" in error for error in errors))
 
     def test_placeholder_pr_fails(self):
         body = VALID_PR.replace("Closes #12", "Closes #").replace("PASS", "待验收")

@@ -27,6 +27,13 @@ commitSha: <exact current PR head SHA approved>
 
 说明与 Issue 任务边界的偏差及确认记录；没有偏差时写明“无偏差”。
 
+## Worker ownership
+
+列出本 PR 允许修改的仓库相对路径；目录必须以 `/` 结尾，未列出的 changed files 会被 Gate 阻断。
+
+- plugins/example/
+- tests/example_test.py
+
 ## 必须完成项证据
 
 - [ ] 必须完成项：可检查的测试、行为或产物证据

@@ -16,7 +16,7 @@ from pathlib import Path
 
 PR_SECTIONS = [
     "关联任务", "风险等级", "实际改动", "范围偏差", "必须完成项证据",
-    "测试门禁", "行为验收", "QA 独立性与结论", "剩余风险", "回滚方式", "失败记录",
+    "Worker ownership", "测试门禁", "行为验收", "QA 独立性与结论", "剩余风险", "回滚方式", "失败记录",
 ]
 ISSUE_SECTIONS = ["Goal", "必须完成", "验收门禁", "任务边界", "风险等级", "依赖与阻塞条件", "失败处理与回滚"]
 HEADING = re.compile(r"^#{2,6}\s+(.+?)\s*$", re.MULTILINE)
@@ -55,6 +55,57 @@ def status_from_labels(labels: list[str]) -> str:
     return ""
 
 
+def normalize_repo_path(value: str) -> str:
+    raw = value.strip().strip("`'\"")
+    if not raw or re.match(r"^[A-Za-z]:[\\/]", raw) or raw.startswith(("/", "\\")):
+        return ""
+    directory = raw.endswith(("/", "\\"))
+    normalized = raw.replace("\\", "/")
+    parts = [part for part in normalized.split("/") if part and part != "."]
+    if not parts or any(part == ".." for part in parts):
+        return ""
+    path = "/".join(parts)
+    return f"{path}/" if directory and not path.endswith("/") else path
+
+
+def ownership_paths(block: str) -> list[str]:
+    paths: list[str] = []
+    for line in (block or "").splitlines():
+        match = re.match(r"^\s*[-*]\s+(.+?)\s*$", line)
+        if not match:
+            continue
+        item = match.group(1).strip()
+        if item.lower().startswith(("allowed:", "owner:", "task:")):
+            continue
+        path = normalize_repo_path(item)
+        if path:
+            paths.append(path)
+    return paths
+
+
+def path_is_owned(path: str, allowed_paths: list[str]) -> bool:
+    normalized = normalize_repo_path(path)
+    if not normalized:
+        return False
+    for allowed in allowed_paths:
+        if allowed.endswith("/") and normalized.startswith(allowed):
+            return True
+        if normalized == allowed:
+            return True
+    return False
+
+
+def validate_worker_diff_boundary(changed_files: list[str], ownership_block: str) -> list[str]:
+    allowed_paths = ownership_paths(ownership_block)
+    if not allowed_paths:
+        return ["Worker ownership has no allowed paths"]
+    errors: list[str] = []
+    for changed_file in changed_files:
+        if not path_is_owned(changed_file, allowed_paths):
+            errors.append(f"changed file is outside Worker ownership: {changed_file}")
+    return errors
+
+
 def validate_l3_approval_event(event: dict | None, head_sha: str) -> list[str]:
     if event is None:
         return ["L3 approval event is missing"]
@@ -79,6 +130,7 @@ def validate(
     head_sha: str,
     labels: list[str] | None = None,
     approval_event: dict | None = None,
+    changed_files: list[str] | None = None,
 ) -> list[str]:
     labels = labels or []
     errors: list[str] = []
@@ -94,6 +146,8 @@ def validate(
         errors.append("PR must close a numbered Issue")
     if PLACEHOLDER.search(pr_body or ""):
         errors.append("PR contains unresolved placeholders")
+    if changed_files is not None:
+        errors.extend(validate_worker_diff_boundary(changed_files, pr.get("Worker ownership", "")))
 
     tests = pr.get("测试门禁", "")
     for name in ("gate", "command", "exitCode", "passed", "failed", "skipped", "timestamp", "commitSha", "artifact"):
@@ -187,11 +241,33 @@ def fetch_check_runs(repo: str, head_sha: str, token: str) -> dict:
         raise RuntimeError(f"cannot read GitHub Checks: {exc}") from exc
 
 
+def fetch_changed_files(repo: str, number: int, token: str) -> list[str]:
+    files: list[str] = []
+    page = 1
+    while True:
+        request = urllib.request.Request(
+            f"https://api.github.com/repos/{repo}/pulls/{number}/files?per_page=100&page={page}",
+            headers={"Accept": "application/vnd.github+json", "Authorization": f"Bearer {token}", "User-Agent": "agents-team-gate"},
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=20) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+        except (urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError) as exc:
+            raise RuntimeError(f"cannot read PR changed files: {exc}") from exc
+        if not isinstance(payload, list):
+            raise RuntimeError("cannot read PR changed files: response is not a list")
+        files.extend(str(item.get("filename") or "") for item in payload if isinstance(item, dict))
+        if len(payload) < 100:
+            return [path for path in files if path]
+        page += 1
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--event", type=Path, required=True)
     parser.add_argument("--issue-body-file", type=Path)
     parser.add_argument("--approval-event-file", type=Path)
+    parser.add_argument("--changed-files-file", type=Path)
     args = parser.parse_args()
     event = json.loads(args.event.read_text(encoding="utf-8"))
     token = os.environ.get("GITHUB_TOKEN", "")
@@ -225,10 +301,21 @@ def main() -> int:
             if not isinstance(approval_event, dict):
                 print("Agents-Team gate blocked: approval event must be a JSON object")
                 return 1
-        errors = validate(pr_body, issue_body, head_sha, labels=labels, approval_event=approval_event)
         if not token:
             print("Agents-Team gate blocked: GITHUB_TOKEN is required")
             return 1
+        if args.changed_files_file:
+            changed_files = json.loads(args.changed_files_file.read_text(encoding="utf-8"))
+            if not isinstance(changed_files, list) or not all(isinstance(path, str) for path in changed_files):
+                print("Agents-Team gate blocked: changed files must be a JSON string array")
+                return 1
+        else:
+            try:
+                changed_files = fetch_changed_files(repo, int(pull_request.get("number") or 0), token)
+            except RuntimeError as exc:
+                print(f"Agents-Team gate blocked: {exc}")
+                return 1
+        errors = validate(pr_body, issue_body, head_sha, labels=labels, approval_event=approval_event, changed_files=changed_files)
         try:
             errors.extend(validate_check_runs(fetch_check_runs(repo, head_sha, token), head_sha))
         except RuntimeError as exc:

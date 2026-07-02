@@ -36,6 +36,8 @@ L2/L3 Issue 必须依次包含 Goal、必须完成、验收门禁、任务边界
 
 > 按照 Issue #123 执行团队目标。严格实现 Goal，完成全部必须完成项，通过验收门禁，严禁突破任务边界；不满足条件不得宣布完成。
 
+PR 必须在 `Worker ownership` 区块声明允许修改的仓库相对路径，目录以 `/` 结尾。生成的 Gate 会读取 PR changed files，任何未被声明路径覆盖的文件变更都会 BLOCK，而不是 warning。
+
 L3 涉及数据、核心契约、权限、密钥、费用、真实 Provider 或生产环境，实施前必须暂停并请求用户确认。
 L3 的正文确认只作为说明；PR Gate 还必须取得可审计的 `L3 approval event`，字段至少包含 `actor`、`timestamp`、`scope`、`risk: L3` 和当前 PR head 的 `commitSha`。无法接入平台事件时，可先用本地 JSON fixture 接入验证器，但不得把 Issue/PR 正文文本当作批准事件。
 
