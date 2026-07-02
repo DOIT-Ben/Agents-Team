@@ -55,7 +55,31 @@ def status_from_labels(labels: list[str]) -> str:
     return ""
 
 
-def validate(pr_body: str, issue_body: str, head_sha: str, labels: list[str] | None = None) -> list[str]:
+def validate_l3_approval_event(event: dict | None, head_sha: str) -> list[str]:
+    if event is None:
+        return ["L3 approval event is missing"]
+    missing = [name for name in ("actor", "timestamp", "scope", "risk", "commitSha") if not str(event.get(name, "")).strip()]
+    if missing:
+        return ["L3 approval event missing: " + ", ".join(missing)]
+    errors: list[str] = []
+    if str(event.get("risk", "")).upper() != "L3":
+        errors.append("L3 approval event risk must be L3")
+    timestamp = str(event.get("timestamp") or "")
+    if not valid_timestamp(timestamp):
+        errors.append("L3 approval event timestamp is not ISO 8601")
+    commit_sha = str(event.get("commitSha") or "")
+    if commit_sha != head_sha:
+        errors.append(f"L3 approval event commitSha {commit_sha} does not match head.sha {head_sha}")
+    return errors
+
+
+def validate(
+    pr_body: str,
+    issue_body: str,
+    head_sha: str,
+    labels: list[str] | None = None,
+    approval_event: dict | None = None,
+) -> list[str]:
     labels = labels or []
     errors: list[str] = []
     pr = sections(pr_body)
@@ -110,6 +134,7 @@ def validate(pr_body: str, issue_body: str, head_sha: str, labels: list[str] | N
         for field in L3_REQUIRED_FIELDS:
             if not re.search(rf"(?mi)^\s*{re.escape(field)}\s*[：:]\s*\S+", issue_body or ""):
                 errors.append(f"L3 Issue missing required field: {field}")
+        errors.extend(validate_l3_approval_event(approval_event, head_sha))
     return errors
 
 
@@ -166,6 +191,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--event", type=Path, required=True)
     parser.add_argument("--issue-body-file", type=Path)
+    parser.add_argument("--approval-event-file", type=Path)
     args = parser.parse_args()
     event = json.loads(args.event.read_text(encoding="utf-8"))
     token = os.environ.get("GITHUB_TOKEN", "")
@@ -193,7 +219,13 @@ def main() -> int:
             except RuntimeError as exc:
                 print(f"Agents-Team gate blocked: {exc}")
                 return 1
-        errors = validate(pr_body, issue_body, head_sha, labels=labels)
+        approval_event = None
+        if args.approval_event_file:
+            approval_event = json.loads(args.approval_event_file.read_text(encoding="utf-8"))
+            if not isinstance(approval_event, dict):
+                print("Agents-Team gate blocked: approval event must be a JSON object")
+                return 1
+        errors = validate(pr_body, issue_body, head_sha, labels=labels, approval_event=approval_event)
         if not token:
             print("Agents-Team gate blocked: GITHUB_TOKEN is required")
             return 1

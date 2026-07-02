@@ -7,6 +7,18 @@ Closes #<Issue number>
 
 L1 / L2 / L3
 
+## L3 approval event
+
+L3 PR 必须提供可审计批准事件；Issue/PR 正文中的“用户确认”只能作为说明，不能替代事件。
+
+```yaml
+actor: <approver account or local fixture owner>
+timestamp: <ISO 8601 timestamp>
+scope: <approved issue, risk path, or PR scope>
+risk: L3
+commitSha: <exact current PR head SHA approved>
+```
+
 ## 实际改动
 
 列出最终行为变化和涉及文件。

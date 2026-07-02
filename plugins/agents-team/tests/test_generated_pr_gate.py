@@ -83,6 +83,23 @@ VALID_CHECK_RUNS = {
     ]
 }
 
+VALID_L3_ISSUE = VALID_ISSUE.replace("L2", "L3 真实 Provider") + """
+## 用户确认
+用户确认：approved
+## 方案
+方案：staged rollout.
+## 回滚
+回滚：revert the PR.
+"""
+
+VALID_L3_APPROVAL = {
+    "actor": "owner",
+    "timestamp": "2026-07-01T08:00:00+00:00",
+    "scope": "Issue #12 L3 provider change",
+    "risk": "L3",
+    "commitSha": "abc123",
+}
+
 
 class GeneratedPrGateTests(unittest.TestCase):
     def test_valid_current_head_contract_passes(self):
@@ -138,6 +155,18 @@ class GeneratedPrGateTests(unittest.TestCase):
         failed = {"check_runs": [{**VALID_CHECK_RUNS["check_runs"][0], "conclusion": "failure"}]}
         errors = MODULE.validate_check_runs(failed, "abc123")
         self.assertTrue(any("did not pass" in error for error in errors))
+
+    def test_l3_text_approval_without_event_is_rejected(self):
+        errors = MODULE.validate(VALID_PR, VALID_L3_ISSUE, "abc123")
+        self.assertTrue(any("L3 approval event" in error for error in errors))
+
+    def test_l3_approval_event_must_match_head(self):
+        event = {**VALID_L3_APPROVAL, "commitSha": "old456"}
+        errors = MODULE.validate(VALID_PR, VALID_L3_ISSUE, "abc123", approval_event=event)
+        self.assertTrue(any("approval event commitSha" in error for error in errors))
+
+    def test_valid_l3_approval_event_passes(self):
+        self.assertEqual(MODULE.validate(VALID_PR, VALID_L3_ISSUE, "abc123", approval_event=VALID_L3_APPROVAL), [])
 
 if __name__ == "__main__":
     unittest.main()

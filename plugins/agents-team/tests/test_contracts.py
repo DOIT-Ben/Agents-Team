@@ -77,6 +77,14 @@ commitSha：abc123
 无。
 """
 
+VALID_L3_APPROVAL = {
+    "actor": "owner",
+    "timestamp": "2026-07-01T08:00:00+00:00",
+    "scope": "Issue #123 L3 change",
+    "risk": "L3",
+    "commitSha": HEAD_SHA,
+}
+
 
 class ContractTests(unittest.TestCase):
     def test_valid_issue_contract_has_no_findings(self):
@@ -93,6 +101,16 @@ class ContractTests(unittest.TestCase):
     def test_l3_requires_user_decision(self):
         findings = validate_issue_contract(VALID_ISSUE.replace("L2", "L3"))
         self.assertIn("AT-CONTRACT-006", [finding.code for finding in findings])
+
+    def test_l3_pr_requires_approval_event(self):
+        l3_issue = VALID_ISSUE.replace("L2", "L3") + "\n### L3 方案与用户确认\n用户确认：approved\n"
+        findings = validate_pr_contract(VALID_PR, l3_issue, ["risk:L3"], current_sha=HEAD_SHA)
+        self.assertIn("AT-QA-007", [finding.code for finding in findings])
+
+        self.assertEqual(
+            validate_pr_contract(VALID_PR, l3_issue, ["risk:L3"], current_sha=HEAD_SHA, approval_event=VALID_L3_APPROVAL),
+            [],
+        )
 
     def test_extracts_linked_issue(self):
         self.assertEqual(extract_linked_issue(VALID_PR), 123)

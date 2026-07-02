@@ -39,6 +39,8 @@ class TemplateContractTests(unittest.TestCase):
             self.assertIn(field, text)
         for field in ["验收者", "实现上下文", "QA 上下文", "验证阶段", "证据"]:
             self.assertIn(field, text)
+        for field in ["L3 approval event", "actor", "scope", "risk", "commitSha"]:
+            self.assertIn(field, text)
 
     def test_generated_gate_validates_pr_issue_and_current_head_evidence(self):
         validator = (TEMPLATES / "validate_pr_contract.py").read_text(encoding="utf-8")
