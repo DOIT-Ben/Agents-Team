@@ -33,6 +33,11 @@ None.
 - plugins/agents-team/scripts/team_collaboration/
 - plugins/agents-team/tests/
 
+## Risk path classification
+
+- plugins/agents-team/scripts/team_collaboration/: protectedFiles
+- plugins/agents-team/tests/: standard
+
 ## 必须完成项证据
 
 - item: test output
@@ -149,6 +154,26 @@ class PrContractTests(unittest.TestCase):
     def test_worker_diff_boundary_blocks_unowned_files(self):
         errors = module.validate(VALID_PR, VALID_ISSUE, HEAD_SHA, changed_files=["README.md"])
         self.assertTrue(any("outside Worker ownership" in error for error in errors))
+
+    def test_l2_requires_risk_path_classification_for_changed_files(self):
+        body = VALID_PR.replace("## Risk path classification\n\n- plugins/agents-team/scripts/team_collaboration/: protectedFiles\n- plugins/agents-team/tests/: standard\n\n", "")
+        errors = module.validate(
+            body,
+            VALID_ISSUE,
+            HEAD_SHA,
+            changed_files=["plugins/agents-team/scripts/team_collaboration/contracts.py"],
+        )
+        self.assertTrue(any("Risk path classification" in error for error in errors))
+
+    def test_l2_blocks_unclassified_changed_file(self):
+        errors = module.validate(VALID_PR, VALID_ISSUE, HEAD_SHA, changed_files=["README.md"])
+        self.assertTrue(any("not covered by Risk path classification" in error for error in errors))
+
+    def test_l1_does_not_require_risk_path_classification(self):
+        body = VALID_PR.replace("L2", "L1").replace("## Risk path classification\n\n- plugins/agents-team/scripts/team_collaboration/: protectedFiles\n- plugins/agents-team/tests/: standard\n\n", "")
+        issue = VALID_ISSUE.replace("L2", "L1")
+        errors = module.validate(body, issue, HEAD_SHA, changed_files=["README.md"])
+        self.assertFalse(any("Risk path classification" in error for error in errors))
 
     def test_placeholder_pr_fails(self):
         body = VALID_PR.replace("Closes #12", "Closes #").replace("PASS", "待验收")

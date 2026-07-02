@@ -23,6 +23,7 @@ HEADING = re.compile(r"^#{2,6}\s+(.+?)\s*$", re.MULTILINE)
 ISSUE_LINK = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)\b", re.IGNORECASE)
 PLACEHOLDER = re.compile(r"<[^>]+>|待验收|待补充|TODO", re.IGNORECASE)
 L3_REQUIRED_FIELDS = ["用户确认", "方案", "回滚"]
+RISK_PATH_CATEGORIES = {"standard", "criticalPaths", "protectedFiles", "productionPaths", "realProviderPaths"}
 
 
 def sections(body: str) -> dict[str, str]:
@@ -106,6 +107,37 @@ def validate_worker_diff_boundary(changed_files: list[str], ownership_block: str
     return errors
 
 
+def risk_path_entries(block: str) -> tuple[list[tuple[str, str]], list[str]]:
+    entries: list[tuple[str, str]] = []
+    invalid: list[str] = []
+    for line in (block or "").splitlines():
+        match = re.match(r"^\s*[-*]\s+(.+?)\s*[：:]\s*([A-Za-z][A-Za-z0-9_-]*)\s*$", line)
+        if not match:
+            continue
+        path = normalize_repo_path(match.group(1))
+        category = match.group(2).strip()
+        if not path or category not in RISK_PATH_CATEGORIES:
+            invalid.append(line.strip())
+            continue
+        entries.append((path, category))
+    return entries, invalid
+
+
+def validate_risk_path_classification(risk: str, changed_files: list[str] | None, classification_block: str) -> list[str]:
+    if risk not in {"L2", "L3"}:
+        return []
+    entries, invalid = risk_path_entries(classification_block)
+    if not entries:
+        return ["L2/L3 PR is missing Risk path classification"]
+    errors = [f"invalid Risk path classification: {item}" for item in invalid]
+    if changed_files is not None:
+        classified_paths = [path for path, _ in entries]
+        for changed_file in changed_files:
+            if not path_is_owned(changed_file, classified_paths):
+                errors.append(f"changed file is not covered by Risk path classification: {changed_file}")
+    return errors
+
+
 def validate_l3_approval_event(event: dict | None, head_sha: str) -> list[str]:
     if event is None:
         return ["L3 approval event is missing"]
@@ -166,7 +198,9 @@ def validate(
         errors.append("test evidence artifact must be an HTTPS URL")
 
     risk = pr.get("风险等级", "") + "\n" + issue.get("风险等级", "")
-    if re.search(r"\bL[23]\b", risk, re.IGNORECASE):
+    normalized_risk = "L3" if re.search(r"\bL3\b", risk, re.IGNORECASE) else "L2" if re.search(r"\bL2\b", risk, re.IGNORECASE) else "L1" if re.search(r"\bL1\b", risk, re.IGNORECASE) else ""
+    errors.extend(validate_risk_path_classification(normalized_risk, changed_files, pr.get("Risk path classification", "")))
+    if normalized_risk in {"L2", "L3"}:
         qa = pr.get("QA 独立性与结论", "")
         if not re.search(r"独立上下文\s*[：:]\s*是", qa):
             errors.append("L2/L3 QA must use an independent context")
@@ -184,7 +218,7 @@ def validate(
             errors.append("QA context must differ from implementation context")
         if status_from_labels(labels) == "pass" and scalar(qa, "验证阶段").lower() != "verify":
             errors.append("PASS status requires explicit verify stage")
-    if re.search(r"\bL3\b", risk, re.IGNORECASE):
+    if normalized_risk == "L3":
         for field in L3_REQUIRED_FIELDS:
             if not re.search(rf"(?mi)^\s*{re.escape(field)}\s*[：:]\s*\S+", issue_body or ""):
                 errors.append(f"L3 Issue missing required field: {field}")

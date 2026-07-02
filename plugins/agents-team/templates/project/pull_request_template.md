@@ -34,6 +34,13 @@ commitSha: <exact current PR head SHA approved>
 - plugins/example/
 - tests/example_test.py
 
+## Risk path classification
+
+L2/L3 PR 必须为每个 changed file 声明风险路径分类。可用分类：`standard`、`criticalPaths`、`protectedFiles`、`productionPaths`、`realProviderPaths`。
+
+- plugins/example/: standard
+- .github/workflows/: protectedFiles
+
 ## 必须完成项证据
 
 - [ ] 必须完成项：可检查的测试、行为或产物证据
