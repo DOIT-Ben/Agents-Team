@@ -115,6 +115,14 @@ VALID_L3_ISSUE = VALID_ISSUE.replace("L2", "L3 真实 Provider") + """
 回滚: revert the PR.
 """
 
+VALID_L3_APPROVAL = {
+    "actor": "owner",
+    "timestamp": "2026-07-01T08:00:00+00:00",
+    "scope": "Issue #12 L3 provider change",
+    "risk": "L3",
+    "commitSha": HEAD_SHA,
+}
+
 
 class PrContractTests(unittest.TestCase):
     def test_valid_pr_and_issue_pass(self):
@@ -163,8 +171,17 @@ class PrContractTests(unittest.TestCase):
         self.assertTrue(any("回滚" in error for error in errors))
 
     def test_valid_l3_issue_passes(self):
-        errors = module.validate(VALID_PR, VALID_L3_ISSUE, HEAD_SHA)
+        errors = module.validate(VALID_PR, VALID_L3_ISSUE, HEAD_SHA, approval_event=VALID_L3_APPROVAL)
         self.assertEqual(errors, [])
+
+    def test_l3_text_approval_without_event_fails(self):
+        errors = module.validate(VALID_PR, VALID_L3_ISSUE, HEAD_SHA)
+        self.assertTrue(any("L3 approval event" in error for error in errors))
+
+    def test_l3_approval_event_must_match_head(self):
+        event = {**VALID_L3_APPROVAL, "commitSha": "old456"}
+        errors = module.validate(VALID_PR, VALID_L3_ISSUE, HEAD_SHA, approval_event=event)
+        self.assertTrue(any("approval event commitSha" in error for error in errors))
 
 
 if __name__ == "__main__":

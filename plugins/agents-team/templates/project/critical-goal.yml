@@ -39,7 +39,7 @@ body:
     id: decision
     attributes:
       label: L3 方案与用户确认
-      description: 记录方案、备选、成本、风险、回滚以及用户确认结论。
+      description: 记录方案、备选、成本、风险、回滚以及用户确认结论；确认正文不能替代 PR Gate 使用的 L3 approval event。
     validations:
       required: true
   - type: textarea

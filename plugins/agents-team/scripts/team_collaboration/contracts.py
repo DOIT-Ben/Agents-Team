@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import re
 from collections.abc import Iterable
+from datetime import datetime
+from typing import Any
 
 from .diagnostics import Finding
 
@@ -41,10 +43,12 @@ def _is_vague(value: str) -> bool:
 
 def _risk_from(sections: dict[str, str], labels: Iterable[str] = ()) -> str:
     candidates = [sections.get("风险等级", ""), *labels]
+    found: set[str] = set()
     for candidate in candidates:
-        match = re.search(r"\bL([123])\b", candidate, re.IGNORECASE)
-        if match:
-            return "L" + match.group(1)
+        found.update("L" + match for match in re.findall(r"\bL([123])\b", candidate, re.IGNORECASE))
+    for risk in ("L3", "L2", "L1"):
+        if risk in found:
+            return risk
     return ""
 
 
@@ -59,6 +63,34 @@ def _status_from_labels(labels: Iterable[str]) -> str:
 def _scalar(block: str, name: str) -> str:
     match = re.search(rf"(?mi)^\s*(?:[-*]\s+)?{re.escape(name)}\s*[：:]\s*(.+?)\s*$", block or "")
     return match.group(1).strip() if match else ""
+
+
+def _valid_timestamp(value: Any) -> bool:
+    if not isinstance(value, str) or not value.strip():
+        return False
+    try:
+        datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    return True
+
+
+def validate_l3_approval_event(event: dict[str, Any] | None, *, current_sha: str | None) -> list[Finding]:
+    if event is None:
+        return [Finding("AT-QA-007", "error", "L3 approval event", "L3 approval event is missing", "attach a platform or local approval event fixture", "missing")]
+    required = {"actor", "timestamp", "scope", "risk", "commitSha"}
+    missing = sorted(field for field in required if not str(event.get(field, "")).strip())
+    if missing:
+        return [Finding("AT-QA-007", "error", "L3 approval event", f"missing L3 approval event fields: {', '.join(missing)}", "record actor, timestamp, scope, risk and commitSha", ", ".join(missing))]
+    findings: list[Finding] = []
+    if str(event.get("risk", "")).upper() != "L3":
+        findings.append(Finding("AT-QA-007", "error", "L3 approval event", "approval event risk is not L3", "record risk: L3", str(event.get("risk", ""))))
+    if not _valid_timestamp(event.get("timestamp")):
+        findings.append(Finding("AT-QA-007", "error", "L3 approval event", "approval event timestamp is invalid", "record an ISO 8601 timestamp", str(event.get("timestamp", ""))))
+    commit_sha = str(event.get("commitSha", "")).strip()
+    if current_sha is not None and commit_sha != current_sha:
+        findings.append(Finding("AT-QA-007", "error", "L3 approval event", f"approval event commitSha {commit_sha} does not match head.sha {current_sha}", "record an approval event for the current PR head", commit_sha))
+    return findings
 
 
 def validate_issue_contract(body: str) -> list[Finding]:
@@ -88,6 +120,7 @@ def validate_pr_contract(
     labels: Iterable[str],
     *,
     current_sha: str | None = None,
+    approval_event: dict[str, Any] | None = None,
 ) -> list[Finding]:
     sections = parse_sections(body)
     findings = [_missing(section, "PR contract") for section in PR_SECTIONS if not sections.get(section, "").strip()]
@@ -122,6 +155,8 @@ def validate_pr_contract(
             findings.append(Finding("AT-QA-005", "error", "PR/QA 独立性与结论", "QA context matches implementation context", "run QA in a separate context and record both context identifiers", qa_context))
         if _status_from_labels(labels) == "pass" and _scalar(qa, "验证阶段").lower() != "verify":
             findings.append(Finding("AT-QA-006", "error", "PR/QA 独立性与结论", "PASS status was declared without an explicit verify stage", "record 验证阶段：verify from the verifier before status:pass", qa))
+        if risk == "L3":
+            findings.extend(validate_l3_approval_event(approval_event, current_sha=current_sha))
 
     tests = sections.get("测试门禁", "")
     if not re.search(r"exitCode\s*[：:]\s*0\b", tests, re.IGNORECASE) or not re.search(r"failed\s*[：:]\s*0\b", tests, re.IGNORECASE):

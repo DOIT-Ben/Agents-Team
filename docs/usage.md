@@ -37,6 +37,7 @@ L2/L3 Issue 必须依次包含 Goal、必须完成、验收门禁、任务边界
 > 按照 Issue #123 执行团队目标。严格实现 Goal，完成全部必须完成项，通过验收门禁，严禁突破任务边界；不满足条件不得宣布完成。
 
 L3 涉及数据、核心契约、权限、密钥、费用、真实 Provider 或生产环境，实施前必须暂停并请求用户确认。
+L3 的正文确认只作为说明；PR Gate 还必须取得可审计的 `L3 approval event`，字段至少包含 `actor`、`timestamp`、`scope`、`risk: L3` 和当前 PR head 的 `commitSha`。无法接入平台事件时，可先用本地 JSON fixture 接入验证器，但不得把 Issue/PR 正文文本当作批准事件。
 
 ### 工程生命周期
 
@@ -59,6 +60,7 @@ plan-team-goal -> build-team-goal -> review-team-goal -> ship-team-goal
 没有独立上下文时不能伪造独立 QA。任何必须完成项无证据、指定测试失败、P0/P1 未解决或任务边界违规都必须 FAIL。
 
 L2/L3 的 PR 必须记录可验证的 QA 证据：独立上下文、验收者、实现上下文、QA 上下文、QA 复核的当前 `commitSha`、PASS/FAIL/BLOCKED 结论和证据链接。QA 上下文必须与实现上下文不同，`commitSha` 必须等于当前 PR head。
+L3 的批准事件同样必须绑定当前 head；事件缺失、字段缺失、风险不是 L3、时间戳无效或 `commitSha` 与当前 head 不一致时，Gate 必须失败。
 生命周期标签顺序为 `status:draft -> status:ready -> status:in-progress -> status:implemented -> status:verifying -> status:pass|status:fail -> status:mergeable`；`status:pass` 必须由 verifier 在 QA 区块记录 `验证阶段：verify` 后才允许出现。
 
 ## 本地反馈导出
