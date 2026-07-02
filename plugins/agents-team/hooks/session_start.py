@@ -13,7 +13,13 @@ sys.path.insert(0, str(PLUGIN_ROOT / "scripts"))
 from team_collaboration.validate import validate_project  # noqa: E402
 
 
+def ensure_utf8_stdout() -> None:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+
+
 def main() -> int:
+    ensure_utf8_stdout()
     root = Path(sys.argv[1] if len(sys.argv) > 1 else ".").resolve()
     config = root / ".codex" / "team-collaboration.json"
     if not config.is_file():
