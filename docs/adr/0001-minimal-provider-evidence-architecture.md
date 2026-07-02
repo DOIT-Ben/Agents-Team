@@ -51,6 +51,12 @@ artifact: inspectable evidence URL or path
 
 GitHub Actions is a valid evidence source when its run is bound to the current PR head SHA. PR body evidence is an index and human-readable summary; it must not become the only source of truth for future GitHub Checks work.
 
+## Validation Semantics Boundary
+
+`team_collaboration.contracts` is the canonical local contract validator. It parses Markdown contracts, then delegates structured gate evidence semantics to `team_collaboration.evidence` so timestamp, commit SHA, exit code, counts, skip reason, and artifact rules do not drift inside the local Python package.
+
+`templates/project/validate_pr_contract.py` remains a generated standalone GitHub Actions adapter because initialized target projects cannot assume the plugin package is importable. Its behavior must mirror the canonical contract semantics for shared cases. `tests/test_contract_semantic_parity.py` is the regression boundary: adding or changing a contract rule that affects both local and generated validation must update the shared parity matrix, not only one validator.
+
 ## Deferred
 
 - Full Provider Registry implementation.
