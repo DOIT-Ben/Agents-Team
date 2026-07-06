@@ -12,7 +12,7 @@
 [![Codex Plugin](https://img.shields.io/badge/Codex-Plugin-19a7ce?style=flat-square)](plugins/agents-team)
 [![GitHub first](https://img.shields.io/badge/workflow-GitHub%20first-181717?style=flat-square)](#它到底做了什么)
 
-[3 分钟看懂](#3-分钟看懂) · [快速安装](#快速安装) · [10 分钟试用](docs/beta-quickstart.md) · [提交反馈](docs/feedback.md) · [隐私与安全](#隐私与安全承诺) · [使用指南](docs/usage.md)
+[3 分钟看懂](#3-分钟看懂) · [快速安装](#快速安装) · [10 分钟试用](docs/beta-quickstart.md) · [AGENTS.md 玩法](docs/agents-md-guide.md) · [提交反馈](docs/feedback.md) · [隐私与安全](#隐私与安全承诺) · [使用指南](docs/usage.md)
 
 </div>
 
@@ -125,6 +125,8 @@ Agents-Team 现在适合 **公开 Beta 试用**，不是让你第一天就扔进
 
 第一次使用建议走 [10 分钟 Beta 试用](docs/beta-quickstart.md)。
 
+想知道初始化后 `AGENTS.md` 到底怎么约束 Codex、有哪些玩法、怎么验证是否生效，看 [AGENTS.md Guide](docs/agents-md-guide.md)。
+
 ## 怎么用
 
 日常口令：
@@ -226,6 +228,7 @@ Agents-Team/
 ├── .agents/plugins/marketplace.json
 ├── docs/                         # Public user guides only
 │   ├── README.md
+│   ├── agents-md-guide.md
 │   ├── beta-quickstart.md
 │   ├── feedback.md
 │   ├── privacy-feedback.md

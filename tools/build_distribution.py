@@ -15,6 +15,7 @@ INCLUDED_ROOTS = [".agents", "plugins", "tools", "README.md", "CHANGELOG.md", "N
 INCLUDED_DOCS = [
     "docs/README.md",
     "docs/usage.md",
+    "docs/agents-md-guide.md",
     "docs/beta-quickstart.md",
     "docs/feedback.md",
     "docs/privacy-feedback.md",

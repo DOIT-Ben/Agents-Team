@@ -27,6 +27,7 @@ class DistributionTests(unittest.TestCase):
             self.assertIn("plugins/agents-team/skills/route-team-work/SKILL.md", names)
             self.assertIn("plugins/agents-team/references/roles/independent-verifier.md", names)
             self.assertIn("docs/README.md", names)
+            self.assertIn("docs/agents-md-guide.md", names)
             self.assertIn("docs/beta-quickstart.md", names)
             self.assertIn("docs/feedback.md", names)
             self.assertIn("docs/privacy-feedback.md", names)

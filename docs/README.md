@@ -8,6 +8,7 @@
 | --- | --- |
 | [Beta quickstart](beta-quickstart.md) | 你想用大约 10 分钟试用 Agents-Team。 |
 | [Usage guide](usage.md) | 你需要初始化、执行、QA 和管理命令细节。 |
+| [AGENTS.md guide](agents-md-guide.md) | 你想了解 `AGENTS.md` 怎么用、怎么玩、怎么验证是否生效。 |
 | [Feedback guide](feedback.md) | 你想反馈安装、初始化、执行、QA 或文档问题。 |
 | [Feedback privacy](privacy-feedback.md) | 你需要确认哪些信息可以反馈、哪些不该提交。 |
 
