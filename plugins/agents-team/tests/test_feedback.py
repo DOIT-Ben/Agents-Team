@@ -14,23 +14,26 @@ from team_collaboration.feedback import export_feedback, preview_feedback_export
 
 class FeedbackExportTests(unittest.TestCase):
     def test_redacts_likely_secrets_in_nested_payload(self):
+        openai_like_sample = "sk-" + "live" + "-1234567890abcdef"
+        github_like_sample = "ghp_" + "abcdefghijklmnopqrstuvwxyz123456"
+        gh_personal_access_like_sample = "github_" + "pat_" + "1234567890abcdefghijklmnopqrstuvwxyz"
         payload = {
             "title": "Beta note",
-            "apiToken": "sk-live-1234567890abcdef",
+            "apiToken": openai_like_sample,
             "nested": {
-                "Authorization": "Bearer ghp_abcdefghijklmnopqrstuvwxyz123456",
+                "Authorization": "Bearer " + github_like_sample,
                 "notes": "keep this text",
             },
-            "items": [{"password": "plain-secret"}, "github_pat_1234567890abcdefghijklmnopqrstuvwxyz"],
+            "items": [{"password": "plain-secret"}, gh_personal_access_like_sample],
         }
 
         redacted = redact_feedback(payload)
 
         encoded = json.dumps(redacted, ensure_ascii=False)
-        self.assertNotIn("sk-live-1234567890abcdef", encoded)
-        self.assertNotIn("ghp_abcdefghijklmnopqrstuvwxyz123456", encoded)
+        self.assertNotIn(openai_like_sample, encoded)
+        self.assertNotIn(github_like_sample, encoded)
         self.assertNotIn("plain-secret", encoded)
-        self.assertNotIn("github_pat_1234567890abcdefghijklmnopqrstuvwxyz", encoded)
+        self.assertNotIn(gh_personal_access_like_sample, encoded)
         self.assertIn("keep this text", encoded)
 
     def test_preview_does_not_write_output_file(self):

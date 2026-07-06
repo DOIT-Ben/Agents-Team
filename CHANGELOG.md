@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Package Agents-Team as a public Beta with a 10-minute trial path, feedback guide, privacy guardrails, and structured feedback Issue template.
+
 ## 0.3.0 - 2026-06-30
 
 - Add deterministic plan, build, debug, review, and ship routing.

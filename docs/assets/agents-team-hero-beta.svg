@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 560" role="img" aria-labelledby="title desc">
+  <title id="title">Agents-Team hero</title>
+  <desc id="desc">A dark command-room style banner showing Codex work passing through Goal, PR, QA, and Feedback gates.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#090b12"/>
+      <stop offset="0.45" stop-color="#101827"/>
+      <stop offset="1" stop-color="#07141f"/>
+    </linearGradient>
+    <linearGradient id="hot" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ff4d6d"/>
+      <stop offset="0.45" stop-color="#ffb703"/>
+      <stop offset="1" stop-color="#2dd4bf"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#162033" stop-opacity="0.94"/>
+      <stop offset="1" stop-color="#0b1220" stop-opacity="0.9"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0.2 0 1 0 0 0.9 0 0 1 0 1 0 0 0 0.7 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse">
+      <path d="M42 0H0V42" fill="none" stroke="#7dd3fc" stroke-opacity="0.08"/>
+    </pattern>
+  </defs>
+  <rect width="1400" height="560" rx="34" fill="url(#bg)"/>
+  <rect width="1400" height="560" rx="34" fill="url(#grid)"/>
+  <path d="M94 128C230 32 383 36 553 84c148 42 288 42 438 2 116-31 222-24 315 31" fill="none" stroke="url(#hot)" stroke-width="3" stroke-opacity="0.45" filter="url(#glow)"/>
+  <g transform="translate(76 74)">
+    <rect x="0" y="0" width="1248" height="412" rx="30" fill="#070b13" fill-opacity="0.62" stroke="#7dd3fc" stroke-opacity="0.18"/>
+    <g transform="translate(50 54)">
+      <text x="0" y="0" fill="#7dd3fc" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18" letter-spacing="3">PUBLIC BETA // CODEX DELIVERY PROTOCOL</text>
+      <text x="0" y="70" fill="#f8fafc" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="58" font-weight="850">让 Codex 长任务</text>
+      <text x="0" y="138" fill="#f8fafc" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="58" font-weight="850">从聊天变成交付</text>
+      <rect x="0" y="168" width="530" height="7" rx="4" fill="url(#hot)"/>
+      <text x="0" y="220" fill="#cbd5e1" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="24">Goal 写进 Issue · PR 承载证据 · 独立 QA 给结论</text>
+      <text x="0" y="258" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="19">不静默上传，不静默覆盖；先 dry-run，再由用户确认。</text>
+    </g>
+    <g transform="translate(690 56)">
+      <rect x="0" y="0" width="486" height="300" rx="24" fill="url(#panel)" stroke="#334155"/>
+      <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">
+        <text x="30" y="42" fill="#64748b">$ agents-team run</text>
+        <text x="30" y="84" fill="#e2e8f0">goal.issue</text>
+        <text x="170" y="84" fill="#22c55e">LOCKED</text>
+        <text x="30" y="124" fill="#e2e8f0">task.boundary</text>
+        <text x="170" y="124" fill="#22c55e">CHECKED</text>
+        <text x="30" y="164" fill="#e2e8f0">test.evidence</text>
+        <text x="170" y="164" fill="#f59e0b">REQUIRED</text>
+        <text x="30" y="204" fill="#e2e8f0">independent.qa</text>
+        <text x="170" y="204" fill="#2dd4bf">PASS / FAIL</text>
+      </g>
+      <g transform="translate(30 238)">
+        <rect x="0" y="0" width="426" height="38" rx="19" fill="#0f172a" stroke="#2dd4bf" stroke-opacity="0.55"/>
+        <circle cx="26" cy="19" r="7" fill="#2dd4bf"/>
+        <text x="48" y="25" fill="#dbeafe" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700">verifiable delivery, not vibes</text>
+      </g>
+    </g>
+  </g>
+  <g transform="translate(146 508)" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="17" fill="#94a3b8">
+    <text x="0" y="0">Goal</text>
+    <text x="200" y="0">Boundary</text>
+    <text x="430" y="0">Evidence</text>
+    <text x="650" y="0">Independent QA</text>
+    <text x="930" y="0">Redacted Feedback</text>
+  </g>
+</svg>

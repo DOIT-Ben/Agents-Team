@@ -1,42 +1,54 @@
 <div align="center">
 
-<img src="./docs/assets/agents-team-hero-v2.jpg" alt="Agents-Team collaboration workflow" width="100%">
+<img src="./docs/assets/agents-team-hero-beta.svg" alt="Agents-Team turns Codex work into verifiable delivery" width="100%">
 
 # Agents-Team
 
-**让 Codex 不只是“写代码”，而是围绕目标持续推进、接受验收、完成交付。**
+**给 Codex 长任务装一套交付纪律：目标不漂、边界不炸、证据不丢、验收不靠嘴。**
 
 [![Release](https://img.shields.io/badge/release-0.3.0-ff5c5c?style=flat-square)](CHANGELOG.md)
+[![Beta](https://img.shields.io/badge/status-public%20beta-f59e0b?style=flat-square)](#当前是公开-beta)
 [![Tests](https://img.shields.io/badge/tests-verified-19c37d?style=flat-square)](#开发与验证)
 [![Codex Plugin](https://img.shields.io/badge/Codex-Plugin-19a7ce?style=flat-square)](plugins/agents-team)
-[![GitHub first](https://img.shields.io/badge/workflow-GitHub%20first-181717?style=flat-square)](#一条完整的交付链路)
+[![GitHub first](https://img.shields.io/badge/workflow-GitHub%20first-181717?style=flat-square)](#它到底做了什么)
 
-[快速开始](#快速开始) · [它适合谁](#它适合谁) · [交付链路](#一条完整的交付链路) · [使用指南](docs/usage.md) · [设计规范](docs/superpowers/specs/2026-06-29-agents-team-design.md)
+[3 分钟看懂](#3-分钟看懂) · [快速安装](#快速安装) · [10 分钟试用](docs/beta-quickstart.md) · [提交反馈](docs/feedback.md) · [隐私与安全](#隐私与安全承诺) · [使用指南](docs/usage.md)
 
 </div>
 
-## Codex 会写代码，但长项目缺的不是代码
+## 3 分钟看懂
 
-一句“帮我把这个系统做完”，很容易变成一串看似繁忙、实际上不可验收的修改：目标在对话里漂移，范围越做越大，测试被一句“应该没问题”带过，下一次会话又重新理解项目。
+Codex 已经很会写代码了。
 
-Agents-Team 给项目补上的，是一套可以落地、可以检查、可以复用的协作操作系统：
+但长任务真正崩掉的地方，往往不是“写不出来”，而是：目标在对话里漂移，范围越做越大，测试证据说不清，下一轮会话又要重新解释项目，最后还是靠一句“应该没问题”。
 
-- **目标写进 Issue**：Goal、必须完成项、验收门禁和任务边界都成为正式契约。
-- **过程交给 Codex**：主 Codex 自主拆解和执行，只有关键风险才打断你确认。
-- **结果必须举证**：测试没有通过、证据不完整、越过边界，就不能宣布完成。
-- **结论回到 GitHub**：Issue 和 PR 是任务、进度与验收结论的唯一动态真源。
+**Agents-Team 做的事情很直接：把 Codex 的长任务交付，变成一套可以检查、可以复盘、可以持续迭代的协作机制。**
 
-它不是一组“请认真工作”的提示词，而是提示词、项目规则、模板、验证器和 CI 门禁共同组成的机制。
+```text
+Goal 写进 Issue
+改动进入 PR
+测试必须有证据
+实现者不能自签 QA
+高风险任务必须先确认
+反馈必须先脱敏，再由用户决定是否提交
+```
 
-## 它适合谁
+它不是“再写一段更严厉的 prompt”，而是把提示词、项目规则、Issue/PR 模板、验证脚本、CI 门禁和独立 QA 串成一条交付链。
 
-Agents-Team 首先服务于这样的团队：
+## 为什么需要它
 
-> **项目负责人 + 主 Codex + 按任务临时调用的子智能体**
+| 长任务常见事故 | Agents-Team 怎么拦住 |
+| --- | --- |
+| 目标越聊越散，最后没人记得最初要什么 | Goal、必须完成项和验收门禁写进 Issue，成为任务契约 |
+| Codex 顺手改了一堆无关文件 | 任务边界、风险等级和受保护路径进入执行规则 |
+| 测试只剩一句“应该没问题” | PR 必须记录命令、退出码、commitSha 和证据链接 |
+| 实现者自己说自己通过 | L2/L3 必须由未参与实现的上下文独立 QA |
+| 高风险改动被自动化直接推进 | L3 涉及数据、权限、密钥、真实 Provider、生产环境时必须暂停确认 |
+| 用户反馈散在聊天里，无法迭代产品 | Beta feedback Issue 模板 + 本地脱敏反馈导出 |
 
-特别适合长任务、系统开发、跨模块改造和需要多轮会话持续推进的项目。对于十分钟能完成的小改动，它不会强迫你开一场流程大会。
+## 它到底做了什么
 
-## 一条完整的交付链路
+Agents-Team 给 Codex 项目加上一套 GitHub-first 的协作操作系统：
 
 ```text
 你提出目标
@@ -49,31 +61,140 @@ Codex 判断 L1 / L2 / L3 风险
     ↓
 Pull Request 汇总最终差异
     ↓
-独立 QA：PASS / FAIL
+独立 QA：PASS / FAIL / BLOCKED
     ↓
 合并，Issue 成为最终记录
 ```
 
-### Issue 不是愿望清单
+核心分工很简单：
 
-每个正式任务都按固定顺序回答六个问题：
-
-| 区块 | 必须说清楚什么 |
+| 真源 | 管什么 |
 | --- | --- |
-| **Goal** | 最终要改变什么结果 |
-| **必须完成** | 哪些结果缺一不可 |
-| **验收门禁** | 用什么测试、命令或证据判定完成 |
-| **任务边界** | 明确禁止修改和顺手扩张的内容 |
-| **风险等级** | L1、L2 或 L3 |
-| **依赖与阻塞** | 缺少哪些条件就必须暂停 |
+| GitHub Issue | Goal、必须完成、验收门禁、任务边界、风险等级、依赖与阻塞 |
+| Pull Request | 实际差异、测试证据、风险说明、回滚方式 |
+| Independent QA | 是否真的满足 Issue，而不是相信实现者叙述 |
+| CI Gate | 能机械检查的合同、证据、生命周期和漂移问题 |
 
-### 风险决定自治边界
+## 快速安装
 
-- **L1 常规任务**：Codex 可以自主完成并自证。
-- **L2 重要任务**：必须走 PR，并由未参与实现的上下文独立验收。
-- **L3 关键任务**：涉及数据、权限、核心契约、密钥、费用、真实 Provider 或生产环境。设计先确认，结果再独立验收。
+### 方案 A：从 GitHub 安装
 
-这套分级解决的是一个实际矛盾：全部询问会把自动化拖死，全部放权又会把风险藏进提交里。
+适合试用者和普通用户：
+
+```bash
+codex plugin marketplace add DOIT-Ben/Agents-Team --ref master
+```
+
+重启 Codex，在 Plugin 目录中安装并启用 `agents-team`。随后进入任意 Git 仓库，对 Codex 说：
+
+```text
+初始化团队协作机制
+```
+
+初始化默认只做 **dry-run**。Codex 会先展示识别到的技术栈、测试命令、准备新增或修改的文件、冲突和未知项；只有你明确确认后才真正写入。
+
+### 方案 B：本地安装
+
+适合贡献者、测试者或想检查源码的人：
+
+```bash
+git clone https://github.com/DOIT-Ben/Agents-Team.git
+codex plugin marketplace add /absolute/path/to/Agents-Team
+```
+
+### 方案 C：命令行验证
+
+适合想先看它会写什么的人：
+
+```bash
+python PLUGIN_ROOT/scripts/initialize_project.py /path/to/project
+python PLUGIN_ROOT/scripts/initialize_project.py /path/to/project --apply
+python PLUGIN_ROOT/scripts/validate_project.py /path/to/project
+```
+
+## 当前是公开 Beta
+
+Agents-Team 现在适合 **公开 Beta 试用**，不是让你第一天就扔进不可回滚的生产仓库。
+
+| 建议 | 原因 |
+| --- | --- |
+| 先选测试仓库或可回滚分支 | 验证它是否适配你的项目结构、测试命令和协作习惯 |
+| 先看 dry-run，不急着 apply | 你能看到它准备新增/修改什么，不会静默覆盖 |
+| 先跑一个小 L2 Goal | 最快验证 Issue、PR、证据和 QA 是否跑通 |
+| 把失败路径反馈回来 | Beta 阶段最需要真实卡点，而不是只收成功案例 |
+
+第一次使用建议走 [10 分钟 Beta 试用](docs/beta-quickstart.md)。
+
+## 怎么用
+
+日常口令：
+
+```text
+初始化团队协作机制
+按照 Issue #123 执行团队目标
+独立验收 PR #45
+检查团队协作机制
+升级团队协作机制
+修复团队协作机制
+移除团队协作机制
+```
+
+风险等级决定自治边界：
+
+| 等级 | 适合什么 | 要求 |
+| --- | --- | --- |
+| L1 | 局部、可逆、低风险的小改动 | Codex 可以直接处理并自证 |
+| L2 | 用户可见功能、跨模块联动、需要 PR 证据的任务 | 必须有 Goal Issue、PR 和独立 QA |
+| L3 | 数据、权限、密钥、真实 Provider、生产环境、核心契约 | 实施前必须确认方案，实施后必须独立复核与 QA |
+
+完整命令行用法和行为边界见 [使用指南](docs/usage.md)。
+
+## 怎么反馈
+
+当前最需要的反馈不是“好不好用”，而是这些真实卡点：
+
+| 反馈类型 | 例子 |
+| --- | --- |
+| 安装问题 | 插件装不上、启用后不显示、manifest 识别异常 |
+| 初始化问题 | dry-run 不清楚、技术栈识别错、模板冲突处理不好 |
+| 执行问题 | Goal 读取不准、任务边界被扩大、路由阶段不合理 |
+| 验收问题 | PR 证据不完整、独立 QA 无法判断、CI 门禁误报 |
+| 体验问题 | 文档看不懂、提示太重、失败信息不可操作 |
+
+反馈路径：
+
+1. 优先使用 GitHub 的 `Beta feedback` Issue 模板。
+2. 如果需要整理日志片段，先用本地反馈导出生成脱敏预览。
+3. 只提交你确认可公开的片段。
+
+本地反馈导出默认只预览，不写文件、不上传、不创建 Issue：
+
+```bash
+python PLUGIN_ROOT/scripts/export_feedback.py feedback.json --output feedback-redacted.json
+```
+
+确认预览无敏感信息后，才使用 `--apply` 写入本地脱敏文件：
+
+```bash
+python PLUGIN_ROOT/scripts/export_feedback.py feedback.json --output feedback-redacted.json --apply
+```
+
+详细字段见 [反馈指南](docs/feedback.md)。
+
+## 隐私与安全承诺
+
+Agents-Team 处理的是开发仓库，所以默认必须保守。
+
+| 承诺 | 说明 |
+| --- | --- |
+| 不静默上传 | 不会在用户不知道的情况下上传源码、日志、测试输出或仓库内容 |
+| 不静默覆盖 | 已有 `AGENTS.md`、GitHub 模板、CI 和项目规则不会被无提示替换 |
+| 先预览再写入 | 初始化、升级、修复和移除默认 dry-run，用户确认后才应用 |
+| 反馈先脱敏 | 本地反馈导出默认只预览脱敏 JSON，`--apply` 也只写入本地文件 |
+| 高风险先确认 | L3 触及数据、权限、密钥、真实 Provider 或生产环境时必须暂停 |
+| 独立 QA 不伪造 | 没有真正独立上下文，就不能声明独立验收通过 |
+
+隐私边界见 [docs/privacy-feedback.md](docs/privacy-feedback.md)。
 
 ## 治理核心与工程能力
 
@@ -97,60 +218,18 @@ Pull Request 汇总最终差异
 
 如果当前环境已经安装兼容的 `addyosmani/agent-skills`，Agents-Team 可以选择对应工程 Skill；没有安装时始终使用内置能力。外部 Skill 不能绕过 Goal、风险、任务边界、独立 QA 或 CI 门禁。
 
-初始化后，项目会得到项目级 `AGENTS.md` 规则、`.codex/team-collaboration.json` 配置、Issue/PR 模板、验证脚本和可选 CI 门禁。已有文件不会被静默覆盖。
-
-## 快速开始
-
-### 从 GitHub 安装
-
-```bash
-codex plugin marketplace add DOIT-Ben/Agents-Team --ref master
-```
-
-重启 Codex，在 Plugin 目录中安装并启用 `agents-team`。随后进入任意 Git 仓库，对 Codex 说：
-
-```text
-初始化团队协作机制
-```
-
-初始化默认只做 **dry-run**。Codex 会先展示识别到的技术栈、测试命令、准备新增或修改的文件、冲突和未知项；只有你明确确认后才真正写入。
-
-首次安装有一个明确的 bootstrap 步骤：先创建 Draft PR，再向该分支推送一个经过审查的提交，由 `synchronize` 事件验证 Issue、当前 head 证据和 QA 契约。修正 PR 正文时由 `edited` 事件针对同一 head 复验，不需要制造新提交。
-
-### 本地安装
-
-```bash
-git clone https://github.com/DOIT-Ben/Agents-Team.git
-codex plugin marketplace add /absolute/path/to/Agents-Team
-```
-
-### 日常口令
-
-```text
-按照 Issue #123 执行团队目标
-独立验收 PR #45
-检查团队协作机制
-升级团队协作机制
-修复团队协作机制
-移除团队协作机制
-```
-
-完整命令行用法和行为边界见 [使用指南](docs/usage.md)。
-
-## 安全原则
-
-- 初始化、升级、修复和移除都先预览，写入必须获得明确确认。
-- 不覆盖已有 `AGENTS.md`、GitHub 模板或业务 CI。
-- 初始化必须基于完整仓库检出；禁止用缺少既有文件的空投影生成适配器。
-- Hook 只做只读状态检测，不执行项目命令，也不修改仓库。
-- 没有真正独立的验收上下文，就不能伪造“独立 QA”。
-- 文字规则不能保证绝对服从，能机械检查的要求必须交给测试、验证器和 CI。
-
 ## 仓库结构
 
 ```text
 Agents-Team/
+├── .github/ISSUE_TEMPLATE/       # Beta feedback and repository issue forms
 ├── .agents/plugins/marketplace.json
+├── docs/                         # Public guides and engineering records
+│   ├── README.md
+│   ├── beta-quickstart.md
+│   ├── feedback.md
+│   ├── privacy-feedback.md
+│   └── superpowers/              # Design, plan, and audit records
 ├── plugins/agents-team/
 │   ├── .codex-plugin/plugin.json
 │   ├── skills/
@@ -158,7 +237,6 @@ Agents-Team/
 │   ├── scripts/
 │   ├── templates/
 │   └── tests/
-├── docs/
 ├── tools/
 └── README.md
 ```
@@ -174,7 +252,7 @@ python tools/build_distribution.py
 python tools/verify_distribution.py dist/agents-team-0.3.0.zip
 ```
 
-当前测试覆盖 Python、Next.js、.NET、Monorepo、既有 `AGENTS.md` 和既有 CI 等初始化场景，并检查合同、证据、生命周期、路由、角色边界、路径穿越、符号链接和分发包完整性。
+当前测试覆盖 Python、Next.js、.NET、Monorepo、既有 `AGENTS.md` 和既有 CI 等初始化场景，并检查合同、证据、生命周期、路由、角色边界、路径穿越、符号链接、反馈脱敏和分发包完整性。
 
 ## 边界
 
