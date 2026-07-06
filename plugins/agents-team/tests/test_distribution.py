@@ -26,9 +26,19 @@ class DistributionTests(unittest.TestCase):
             self.assertIn("plugins/agents-team/.codex-plugin/plugin.json", names)
             self.assertIn("plugins/agents-team/skills/route-team-work/SKILL.md", names)
             self.assertIn("plugins/agents-team/references/roles/independent-verifier.md", names)
+            self.assertIn("docs/README.md", names)
+            self.assertIn("docs/beta-quickstart.md", names)
+            self.assertIn("docs/feedback.md", names)
+            self.assertIn("docs/privacy-feedback.md", names)
+            self.assertIn("docs/assets/agents-team-hero-beta.svg", names)
             self.assertIn("tools/verify_distribution.py", names)
             self.assertIn("NOTICE.md", names)
+            self.assertFalse(any(name.startswith("plugins/agents-team/tests/") for name in names))
             self.assertNotIn("plugins/agents-team/tests/__pycache__", "\n".join(names))
+            self.assertNotIn("docs/assets/agents-team-hero-v2.jpg", names)
+            self.assertNotIn("docs/beta-feedback-lifecycle-split-plan.md", names)
+            self.assertFalse(any(name.startswith("docs/superpowers/") for name in names))
+            self.assertFalse(any(name.startswith("docs/adr/") for name in names))
 
 
 if __name__ == "__main__":

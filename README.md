@@ -224,12 +224,12 @@ Agents-Team 处理的是开发仓库，所以默认必须保守。
 Agents-Team/
 ├── .github/ISSUE_TEMPLATE/       # Beta feedback and repository issue forms
 ├── .agents/plugins/marketplace.json
-├── docs/                         # Public guides and engineering records
+├── docs/                         # Public user guides only
 │   ├── README.md
 │   ├── beta-quickstart.md
 │   ├── feedback.md
 │   ├── privacy-feedback.md
-│   └── superpowers/              # Design, plan, and audit records
+│   └── assets/agents-team-hero-beta.svg
 ├── plugins/agents-team/
 │   ├── .codex-plugin/plugin.json
 │   ├── skills/
