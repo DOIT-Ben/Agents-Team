@@ -165,9 +165,11 @@ Agents-Team 现在适合 **公开 Beta 试用**，不是让你第一天就扔进
 
 反馈路径：
 
-1. 优先使用 GitHub 的 `Beta feedback` Issue 模板。
-2. 如果需要整理日志片段，先用本地反馈导出生成脱敏预览。
-3. 只提交你确认可公开的片段。
+1. 对 Codex 说：`提交反馈到 GitHub`，触发 `submit-team-feedback` Skill。
+2. Skill 会把用户允许的本地片段、日志摘要或经验沉淀整理成 `Beta feedback` Issue 草稿。
+3. 先预览脱敏后的 Issue；只有你确认安全后，才会用 `gh issue create` 提交。
+
+也可以手动使用 GitHub 的 `Beta feedback` Issue 模板。
 
 本地反馈导出默认只预览，不写文件、不上传、不创建 Issue：
 
@@ -181,6 +183,13 @@ python PLUGIN_ROOT/scripts/export_feedback.py feedback.json --output feedback-re
 python PLUGIN_ROOT/scripts/export_feedback.py feedback.json --output feedback-redacted.json --apply
 ```
 
+生成并提交 GitHub Issue 的命令行等价操作：
+
+```bash
+python PLUGIN_ROOT/scripts/submit_feedback.py feedback.json
+python PLUGIN_ROOT/scripts/submit_feedback.py feedback.json --apply
+```
+
 详细字段见 [反馈指南](docs/feedback.md)。
 
 ## 隐私与安全承诺
@@ -192,7 +201,7 @@ Agents-Team 处理的是开发仓库，所以默认必须保守。
 | 不静默上传 | 不会在用户不知道的情况下上传源码、日志、测试输出或仓库内容 |
 | 不静默覆盖 | 已有 `AGENTS.md`、GitHub 模板、CI 和项目规则不会被无提示替换 |
 | 先预览再写入 | 初始化、升级、修复和移除默认 dry-run，用户确认后才应用 |
-| 反馈先脱敏 | 本地反馈导出默认只预览脱敏 JSON，`--apply` 也只写入本地文件 |
+| 反馈先脱敏 | 反馈 Issue 默认只生成脱敏草稿，确认后才允许提交到 GitHub |
 | 高风险先确认 | L3 触及数据、权限、密钥、真实 Provider 或生产环境时必须暂停 |
 | 独立 QA 不伪造 | 没有真正独立上下文，就不能声明独立验收通过 |
 
@@ -206,6 +215,7 @@ Agents-Team 处理的是开发仓库，所以默认必须保守。
 | `execute-team-goal` | 按 Goal、风险等级和任务边界执行正式任务 |
 | `verify-team-goal` | 在独立上下文中基于证据给出 PASS 或 FAIL |
 | `manage-team-collaboration` | 检查漂移、升级、修复或移除机制 |
+| `submit-team-feedback` | 把本地反馈、日志摘要和经验沉淀整理成脱敏 GitHub Issue 草稿 |
 
 执行 Goal 时，路由层会根据生命周期和失败状态选择六项内置工程能力：
 

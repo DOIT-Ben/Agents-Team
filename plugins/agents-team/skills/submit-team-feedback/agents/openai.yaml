@@ -1,0 +1,4 @@
+interface:
+  display_name: "提交团队反馈"
+  short_description: "Draft and optionally submit a redacted Beta feedback Issue"
+  default_prompt: "把当前 Agents-Team 反馈整理成 GitHub Issue 草稿，先预览并等待我确认，不要直接提交。"

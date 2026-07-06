@@ -80,6 +80,26 @@ python PLUGIN_ROOT/scripts/export_feedback.py feedback.json --output feedback-re
 python PLUGIN_ROOT/scripts/export_feedback.py feedback.json --output feedback-redacted.json --apply
 ```
 
+## 提交反馈 Issue
+
+在 Codex 中可以直接说：
+
+> 提交反馈到 GitHub。
+
+`submit-team-feedback` Skill 会收集用户允许发布的反馈事实、日志摘要和经验沉淀，生成 `Beta feedback` Issue 草稿。默认只预览，不提交：
+
+```bash
+python PLUGIN_ROOT/scripts/submit_feedback.py feedback.json
+```
+
+用户确认草稿安全后，才允许提交：
+
+```bash
+python PLUGIN_ROOT/scripts/submit_feedback.py feedback.json --apply
+```
+
+该命令默认提交到 `DOIT-Ben/Agents-Team`，依赖本机已安装并登录 GitHub CLI `gh`。如果 `gh` 不可用，复制预览草稿手动提交即可。
+
 ## 管理
 
 ```bash

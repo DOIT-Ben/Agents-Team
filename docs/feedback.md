@@ -4,7 +4,9 @@ Agents-Team 的反馈闭环遵循一个原则：**先脱敏预览，再由用户
 
 ## 反馈入口
 
-优先使用 GitHub Issue 模板：`Beta feedback`。如果需要整理本地反馈片段，可以先使用插件内置的本地反馈导出命令生成脱敏预览；该命令默认只输出到 stdout，不写文件、不上传、不创建 Issue。
+优先对 Codex 说：`提交反馈到 GitHub`。这会触发 `submit-team-feedback` Skill，把用户允许的本地片段、日志摘要或经验沉淀整理成 `Beta feedback` Issue 草稿。该 Skill 默认只预览，不上传、不创建 Issue；用户确认后才允许调用 `gh issue create`。
+
+也可以手动使用 GitHub Issue 模板：`Beta feedback`。如果只需要整理本地反馈片段，可以先使用插件内置的本地反馈导出命令生成脱敏预览；该命令默认只输出到 stdout，不写文件、不上传、不创建 Issue。
 
 反馈分为五类：
 
@@ -62,6 +64,28 @@ python PLUGIN_ROOT/scripts/export_feedback.py feedback.json --output feedback-re
 ```bash
 python PLUGIN_ROOT/scripts/export_feedback.py feedback.json --output feedback-redacted.json --apply
 ```
+
+## 一句话提交反馈
+
+对 Codex 说：
+
+```text
+提交反馈到 GitHub：初始化 dry-run 把 Python 项目识别成 Node 项目，期望能识别 pytest，实际给了 npm test。
+```
+
+Skill 应先生成 Issue 草稿并等待确认。命令行等价操作：
+
+```bash
+python PLUGIN_ROOT/scripts/submit_feedback.py feedback.json
+```
+
+确认草稿安全后，才提交到默认仓库 `DOIT-Ben/Agents-Team`：
+
+```bash
+python PLUGIN_ROOT/scripts/submit_feedback.py feedback.json --apply
+```
+
+提交依赖本机已安装并登录 GitHub CLI `gh`。如果 `gh` 不可用，请复制预览草稿，手动提交到 `Beta feedback` Issue 模板。
 
 ## 高质量反馈示例
 
