@@ -51,6 +51,11 @@ class SkillContractTests(unittest.TestCase):
         for phrase in ["检查", "升级", "修复", "移除", "manage_project.py"]:
             self.assertIn(phrase, text)
 
+    def test_submit_feedback_skill_requires_preview_and_confirmation(self):
+        text = (PLUGIN_ROOT / "skills/submit-team-feedback/SKILL.md").read_text(encoding="utf-8")
+        for phrase in ["submit_feedback.py", "preview", "user approval", "gh issue create", "Do not silently upload"]:
+            self.assertIn(phrase, text)
+
 
 if __name__ == "__main__":
     unittest.main()

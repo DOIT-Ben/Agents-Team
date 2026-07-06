@@ -1,0 +1,85 @@
+name: Beta feedback
+description: Report installation, initialization, execution, QA, or feedback-loop issues for Agents-Team Beta.
+title: "[Beta feedback]: "
+labels: ["beta-feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing Agents-Team Beta. Do not paste secrets, private source code, full logs, or unredacted repository/customer information.
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin version
+      description: For example, 0.3.0.
+      placeholder: "0.3.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: stage
+    attributes:
+      label: Stage
+      options:
+        - Installation
+        - Initialization dry-run
+        - Initialization apply
+        - Goal execution
+        - Pull request evidence
+        - Independent QA
+        - CI / gate
+        - Feedback package
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Codex surface, operating system, and any relevant version details.
+      placeholder: "Codex Plugin, Windows 11, Python project"
+    validations:
+      required: true
+  - type: input
+    id: project-type
+    attributes:
+      label: Project type
+      placeholder: "Python / Next.js / .NET / Monorepo / Other"
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect Agents-Team to do?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Use redacted commands and descriptions. Do not include private source code.
+      placeholder: |
+        1. Install plugin
+        2. Run "初始化团队协作机制"
+        3. Inspect dry-run output
+  - type: textarea
+    id: redacted-evidence
+    attributes:
+      label: Redacted evidence
+      description: Optional. Paste only reviewed and redacted snippets.
+      render: text
+  - type: checkboxes
+    id: privacy-check
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed secrets, tokens, private source code, customer information, and unredacted repository details.
+          required: true

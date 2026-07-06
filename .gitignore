@@ -4,3 +4,9 @@ __pycache__/
 dist/
 *.log
 .worktrees/
+.local-history/
+docs/adr/
+docs/superpowers/
+docs/*-plan.md
+docs/validation-lessons.md
+docs/assets/*.jpg

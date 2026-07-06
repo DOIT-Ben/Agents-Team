@@ -9,13 +9,22 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-EXCLUDED_PARTS = {".git", "dist", "__pycache__", ".pytest_cache"}
+EXCLUDED_PARTS = {".git", "dist", "__pycache__", ".pytest_cache", "tests"}
 EXCLUDED_SUFFIXES = {".pyc", ".pyo"}
-INCLUDED_ROOTS = [".agents", "plugins", "docs", "tools", "README.md", "CHANGELOG.md", "NOTICE.md", "LICENSE"]
+INCLUDED_ROOTS = [".agents", "plugins", "tools", "README.md", "CHANGELOG.md", "NOTICE.md", "LICENSE"]
+INCLUDED_DOCS = [
+    "docs/README.md",
+    "docs/usage.md",
+    "docs/agents-md-guide.md",
+    "docs/beta-quickstart.md",
+    "docs/feedback.md",
+    "docs/privacy-feedback.md",
+    "docs/assets/agents-team-hero-beta.svg",
+]
 
 
 def iter_files():
-    for item in INCLUDED_ROOTS:
+    for item in [*INCLUDED_ROOTS, *INCLUDED_DOCS]:
         path = ROOT / item
         if path.is_file():
             yield path
