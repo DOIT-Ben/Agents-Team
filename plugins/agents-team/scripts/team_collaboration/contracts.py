@@ -54,12 +54,27 @@ def _risk_from(sections: dict[str, str], labels: Iterable[str] = ()) -> str:
     return ""
 
 
+def _risk_from_contract(pr_sections: dict[str, str], issue_body: str, labels: Iterable[str] = ()) -> str:
+    issue_sections = parse_sections(issue_body)
+    candidates = [pr_sections.get("风险等级", ""), issue_sections.get("风险等级", ""), *labels]
+    found: set[str] = set()
+    for candidate in candidates:
+        found.update("L" + match for match in re.findall(r"\bL([123])\b", candidate, re.IGNORECASE))
+    for risk in ("L3", "L2", "L1"):
+        if risk in found:
+            return risk
+    return ""
+
+
 def _status_from_labels(labels: Iterable[str]) -> str:
+    statuses: list[str] = []
     for label in labels:
         match = re.search(r"\bstatus:([a-z-]+)\b", label, re.IGNORECASE)
         if match:
-            return match.group(1).lower()
-    return ""
+            statuses.append(match.group(1).lower())
+    if len(statuses) != 1 or statuses[0] not in {"draft", "ready", "in-progress", "implemented", "verifying", "pass", "fail", "mergeable"}:
+        return ""
+    return statuses[0]
 
 
 def _scalar(block: str, name: str) -> str:
@@ -124,6 +139,9 @@ def _path_is_owned(path: str, allowed_paths: Iterable[str]) -> bool:
     if not normalized:
         return False
     for allowed in allowed_paths:
+        allowed = _normalize_repo_path(allowed)
+        if not allowed:
+            continue
         if allowed.endswith("/") and normalized.startswith(allowed):
             return True
         if normalized == allowed:
@@ -176,6 +194,34 @@ def validate_risk_path_classification(risk: str, changed_files: Iterable[str] | 
     return findings
 
 
+def validate_configured_risk_paths(
+    risk: str,
+    changed_files: Iterable[str] | None,
+    classification_block: str,
+    risk_config: dict[str, list[str]] | None,
+) -> list[Finding]:
+    if changed_files is None or not risk_config:
+        return []
+    entries, _ = _risk_path_entries(classification_block)
+    findings: list[Finding] = []
+    for changed_file in changed_files:
+        for category in ("realProviderPaths", "productionPaths", "protectedFiles", "criticalPaths"):
+            configured_paths = risk_config.get(category, [])
+            if not isinstance(configured_paths, list) or not all(isinstance(path, str) and path.strip() for path in configured_paths):
+                findings.append(Finding("AT-CONTRACT-012", "error", "PR/Risk path classification", f"invalid risk config: risk.{category} must be a list of non-empty strings", "fix .codex/team-collaboration.json risk path configuration", str(configured_paths)))
+                continue
+            if not _path_is_owned(changed_file, configured_paths):
+                continue
+            if category in {"realProviderPaths", "productionPaths"} and risk != "L3":
+                findings.append(Finding("AT-CONTRACT-012", "error", "PR/Risk path classification", f"configured {category} path requires L3: {changed_file}", "upgrade the Goal/PR risk to L3 and attach approval evidence", changed_file))
+            matching_entries = [(path, declared_category) for path, declared_category in entries if _path_is_owned(changed_file, [path])]
+            declared = max(matching_entries, key=lambda item: len(_normalize_repo_path(item[0])), default=("", ""))[1]
+            if declared != category:
+                findings.append(Finding("AT-CONTRACT-012", "error", "PR/Risk path classification", f"configured risk category for {changed_file} is {category}, not {declared or 'unclassified'}", "match Risk path classification to .codex/team-collaboration.json risk paths", changed_file))
+            break
+    return findings
+
+
 def _valid_timestamp(value: Any) -> bool:
     if not isinstance(value, str) or not value.strip():
         return False
@@ -188,7 +234,7 @@ def _valid_timestamp(value: Any) -> bool:
 
 def validate_l3_approval_event(event: dict[str, Any] | None, *, current_sha: str | None) -> list[Finding]:
     if event is None:
-        return [Finding("AT-QA-007", "error", "L3 approval event", "L3 approval event is missing", "attach a platform or local approval event fixture", "missing")]
+        return [Finding("AT-QA-007", "error", "L3 approval event", "L3 approval event is missing; L3 is fail-closed until a current-head approval event is attached", "attach a platform approval event or pass a local approval event fixture", "missing")]
     required = {"actor", "timestamp", "scope", "risk", "commitSha"}
     missing = sorted(field for field in required if not str(event.get(field, "")).strip())
     if missing:
@@ -233,6 +279,7 @@ def validate_pr_contract(
     current_sha: str | None = None,
     approval_event: dict[str, Any] | None = None,
     changed_files: Iterable[str] | None = None,
+    risk_config: dict[str, list[str]] | None = None,
 ) -> list[Finding]:
     sections = parse_sections(body)
     findings = [_missing(section, "PR contract") for section in PR_SECTIONS if not sections.get(section, "").strip()]
@@ -249,8 +296,11 @@ def validate_pr_contract(
     if changed_files is not None:
         findings.extend(validate_worker_diff_boundary(changed_files, sections.get("Worker ownership", "")))
 
-    risk = _risk_from(sections, labels)
+    risk = _risk_from_contract(sections, issue_body, labels)
+    if not _status_from_labels(labels):
+        findings.append(Finding("AT-STATE-001", "error", "GitHub labels", "exactly one recognized status label is required", "apply one status:draft|ready|in-progress|implemented|verifying|pass|fail|mergeable label to the PR", ", ".join(labels) or "none"))
     findings.extend(validate_risk_path_classification(risk, changed_files, sections.get("Risk path classification", "")))
+    findings.extend(validate_configured_risk_paths(risk, changed_files, sections.get("Risk path classification", ""), risk_config))
     qa = sections.get("QA 独立性与结论", "")
     if risk in {"L2", "L3"}:
         independent = bool(re.search(r"独立上下文\s*[：:]\s*是", qa))
@@ -269,6 +319,9 @@ def validate_pr_contract(
         qa_context = _scalar(qa, "QA 上下文")
         if implementation_context and qa_context and implementation_context == qa_context:
             findings.append(Finding("AT-QA-005", "error", "PR/QA 独立性与结论", "QA context matches implementation context", "run QA in a separate context and record both context identifiers", qa_context))
+        qa_evidence = _scalar(qa, "证据")
+        if qa_evidence and not re.match(r"https://", qa_evidence):
+            findings.append(Finding("AT-QA-008", "error", "PR/QA 独立性与结论", "QA evidence artifact must be an HTTPS URL", "link to an inspectable QA artifact, session log, review thread or CI run", qa_evidence))
         if _status_from_labels(labels) == "pass" and _scalar(qa, "验证阶段").lower() != "verify":
             findings.append(Finding("AT-QA-006", "error", "PR/QA 独立性与结论", "PASS status was declared without an explicit verify stage", "record 验证阶段：verify from the verifier before status:pass", qa))
         if risk == "L3":

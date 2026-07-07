@@ -34,6 +34,7 @@ def valid_config():
         "enforcement": {
             "mode": "strict",
             "failClosedRisks": ["L2", "L3"],
+            "requiredCheckNames": ["Python unit tests (ubuntu-latest)"],
             "requireLinkedIssue": {"L1": False, "L2": True, "L3": True},
             "requireIndependentQA": {"L1": False, "L2": True, "L3": True},
             "requireFailureRecord": True,
@@ -60,6 +61,15 @@ class ConfigTests(unittest.TestCase):
         config = valid_config()
         config["risk"]["criticalPaths"] = ["../outside"]
         self.assertIn("risk.criticalPaths contains unsafe path: ../outside", validate_config(config))
+
+    def test_paths_and_risk_sections_must_be_objects(self):
+        config = valid_config()
+        config["risk"] = []
+        self.assertIn("risk must be an object", validate_config(config))
+
+        config = valid_config()
+        config["paths"] = []
+        self.assertIn("paths must be an object", validate_config(config))
 
     def test_enforcement_section_is_required(self):
         config = valid_config()
@@ -102,6 +112,15 @@ class ConfigTests(unittest.TestCase):
         config = valid_config()
         config["enforcement"]["requireFailureRecord"] = "required"
         self.assertIn("enforcement.requireFailureRecord must be boolean", validate_config(config))
+
+    def test_required_check_names_must_be_non_empty_strings(self):
+        config = valid_config()
+        config["enforcement"]["requiredCheckNames"] = ["Python unit tests (ubuntu-latest)", ""]
+        self.assertIn("enforcement.requiredCheckNames must be a list of non-empty strings", validate_config(config))
+
+        config = valid_config()
+        config["enforcement"]["requiredCheckNames"] = "Python unit tests (ubuntu-latest)"
+        self.assertIn("enforcement.requiredCheckNames must be a list of non-empty strings", validate_config(config))
 
     def test_load_config_raises_with_all_validation_errors(self):
         with tempfile.TemporaryDirectory() as temp:

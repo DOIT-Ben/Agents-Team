@@ -9,7 +9,7 @@ Protocol 2.0 is always authoritative. Routing selects how to execute a valid Goa
 | `draft`, `ready`, planning intent | plan | `plan-team-goal` | `goal-planner` |
 | `in-progress` | build | `build-team-goal` | `implementation-worker` |
 | failure, error, bug, timeout | debug | `debug-team-goal` | `test-engineer` |
-| `implemented`, `qa-pending` | review | `review-team-goal` | `code-reviewer` |
+| `implemented`, `verifying` | review | `review-team-goal` | `code-reviewer` |
 | `pass`, `mergeable` | ship | `ship-team-goal` | `independent-verifier` |
 
 ## Provider Selection

@@ -116,11 +116,12 @@ class ContractTests(unittest.TestCase):
 
     def test_l3_pr_requires_approval_event(self):
         l3_issue = VALID_ISSUE.replace("L2", "L3") + "\n### L3 方案与用户确认\n用户确认：approved\n"
-        findings = validate_pr_contract(VALID_PR, l3_issue, ["risk:L3"], current_sha=HEAD_SHA)
+        findings = validate_pr_contract(VALID_PR, l3_issue, ["risk:L3", "status:verifying"], current_sha=HEAD_SHA)
         self.assertIn("AT-QA-007", [finding.code for finding in findings])
+        self.assertTrue(any("fail-closed" in finding.message and "approval event" in finding.remediation for finding in findings))
 
         self.assertEqual(
-            validate_pr_contract(VALID_PR, l3_issue, ["risk:L3"], current_sha=HEAD_SHA, approval_event=VALID_L3_APPROVAL),
+            validate_pr_contract(VALID_PR, l3_issue, ["risk:L3", "status:verifying"], current_sha=HEAD_SHA, approval_event=VALID_L3_APPROVAL),
             [],
         )
 
@@ -128,13 +129,20 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(extract_linked_issue(VALID_PR), 123)
 
     def test_valid_pr_contract_has_no_findings(self):
-        self.assertEqual(validate_pr_contract(VALID_PR, VALID_ISSUE, ["risk:L2", "status:qa-pending"], current_sha=HEAD_SHA), [])
+        self.assertEqual(validate_pr_contract(VALID_PR, VALID_ISSUE, ["risk:L2", "status:verifying"], current_sha=HEAD_SHA), [])
+
+    def test_pr_requires_exactly_one_recognized_status_label(self):
+        findings = validate_pr_contract(VALID_PR, VALID_ISSUE, ["risk:L2", "status:ready", "status:pass"], current_sha=HEAD_SHA)
+        self.assertIn("AT-STATE-001", [finding.code for finding in findings])
+
+        findings = validate_pr_contract(VALID_PR, VALID_ISSUE, ["risk:L2", "status:qa-pending"], current_sha=HEAD_SHA)
+        self.assertIn("AT-STATE-001", [finding.code for finding in findings])
 
     def test_worker_diff_boundary_allows_owned_files(self):
         findings = validate_pr_contract(
             VALID_PR,
             VALID_ISSUE,
-            ["risk:L2"],
+            ["risk:L2", "status:verifying"],
             current_sha=HEAD_SHA,
             changed_files=[
                 "plugins/agents-team/scripts/team_collaboration/contracts.py",
@@ -147,7 +155,7 @@ class ContractTests(unittest.TestCase):
         findings = validate_pr_contract(
             VALID_PR,
             VALID_ISSUE,
-            ["risk:L2"],
+            ["risk:L2", "status:verifying"],
             current_sha=HEAD_SHA,
             changed_files=["README.md"],
         )
@@ -158,7 +166,7 @@ class ContractTests(unittest.TestCase):
         findings = validate_pr_contract(
             body,
             VALID_ISSUE,
-            ["risk:L2"],
+            ["risk:L2", "status:verifying"],
             current_sha=HEAD_SHA,
             changed_files=["plugins/agents-team/scripts/team_collaboration/contracts.py"],
         )
@@ -168,42 +176,111 @@ class ContractTests(unittest.TestCase):
         findings = validate_pr_contract(
             VALID_PR,
             VALID_ISSUE,
-            ["risk:L2"],
+            ["risk:L2", "status:verifying"],
             current_sha=HEAD_SHA,
             changed_files=["README.md"],
         )
         self.assertIn("AT-CONTRACT-011", [finding.code for finding in findings])
 
+    def test_configured_risk_path_category_must_match_pr_classification(self):
+        body = VALID_PR.replace("plugins/agents-team/scripts/team_collaboration/: protectedFiles", "plugins/agents-team/scripts/team_collaboration/: standard")
+        findings = validate_pr_contract(
+            body,
+            VALID_ISSUE,
+            ["risk:L2", "status:verifying"],
+            current_sha=HEAD_SHA,
+            changed_files=["plugins/agents-team/scripts/team_collaboration/contracts.py"],
+            risk_config={"protectedFiles": ["plugins/agents-team/scripts/team_collaboration/"]},
+        )
+        self.assertTrue(any(finding.code == "AT-CONTRACT-012" and "protectedFiles" in finding.message for finding in findings))
+
+    def test_configured_production_path_requires_l3(self):
+        body = VALID_PR.replace("plugins/agents-team/scripts/team_collaboration/: protectedFiles", "plugins/agents-team/scripts/team_collaboration/: productionPaths")
+        findings = validate_pr_contract(
+            body,
+            VALID_ISSUE,
+            ["risk:L2", "status:verifying"],
+            current_sha=HEAD_SHA,
+            changed_files=["plugins/agents-team/scripts/team_collaboration/contracts.py"],
+            risk_config={"productionPaths": ["plugins/agents-team/scripts/team_collaboration/"]},
+        )
+        self.assertTrue(any(finding.code == "AT-CONTRACT-012" and "requires L3" in finding.message for finding in findings))
+
+    def test_malformed_risk_config_is_fail_closed(self):
+        findings = validate_pr_contract(
+            VALID_PR,
+            VALID_ISSUE,
+            ["risk:L2", "status:verifying"],
+            current_sha=HEAD_SHA,
+            changed_files=["plugins/agents-team/scripts/team_collaboration/contracts.py"],
+            risk_config={"productionPaths": "plugins/agents-team/scripts/team_collaboration/"},
+        )
+        self.assertTrue(any(finding.code == "AT-CONTRACT-012" and "invalid risk config" in finding.message for finding in findings))
+
+    def test_configured_risk_paths_normalize_backslashes_before_matching(self):
+        body = VALID_PR.replace("plugins/agents-team/scripts/team_collaboration/: protectedFiles", "plugins/agents-team/scripts/team_collaboration/: productionPaths")
+        findings = validate_pr_contract(
+            body,
+            VALID_ISSUE,
+            ["risk:L2", "status:verifying"],
+            current_sha=HEAD_SHA,
+            changed_files=["plugins/agents-team/scripts/team_collaboration/contracts.py"],
+            risk_config={"productionPaths": ["plugins\\agents-team\\scripts\\team_collaboration\\"]},
+        )
+        self.assertTrue(any(finding.code == "AT-CONTRACT-012" and "requires L3" in finding.message for finding in findings))
+
+    def test_pr_risk_classification_uses_most_specific_matching_path(self):
+        body = VALID_PR.replace(
+            "- plugins/agents-team/scripts/team_collaboration/: protectedFiles\n- plugins/agents-team/tests/: standard",
+            "- plugins/agents-team/: standard\n- plugins/agents-team/scripts/team_collaboration/: productionPaths\n- plugins/agents-team/tests/: standard",
+        ).replace("L2", "L3")
+        issue = VALID_ISSUE.replace("L2", "L3") + "\n### L3 方案与用户确认\n用户确认：approved\n"
+        findings = validate_pr_contract(
+            body,
+            issue,
+            ["risk:L3", "status:verifying"],
+            current_sha=HEAD_SHA,
+            approval_event=VALID_L3_APPROVAL,
+            changed_files=["plugins/agents-team/scripts/team_collaboration/contracts.py"],
+            risk_config={"productionPaths": ["plugins\\agents-team\\scripts\\team_collaboration\\"]},
+        )
+        self.assertFalse(any(finding.code == "AT-CONTRACT-012" and "configured risk category" in finding.message for finding in findings))
+
     def test_l1_pr_does_not_require_risk_path_classification(self):
         issue = VALID_ISSUE.replace("L2", "L1")
         body = VALID_PR.replace("L2", "L1").replace("## Risk path classification\n- plugins/agents-team/scripts/team_collaboration/: protectedFiles\n- plugins/agents-team/tests/: standard\n\n", "")
-        findings = validate_pr_contract(body, issue, ["risk:L1"], current_sha=HEAD_SHA, changed_files=["README.md"])
+        findings = validate_pr_contract(body, issue, ["risk:L1", "status:verifying"], current_sha=HEAD_SHA, changed_files=["README.md"])
         self.assertNotIn("AT-CONTRACT-011", [finding.code for finding in findings])
 
     def test_pr_without_issue_link_is_blocked(self):
-        findings = validate_pr_contract(VALID_PR.replace("Closes #123", "none"), VALID_ISSUE, ["risk:L2"])
+        findings = validate_pr_contract(VALID_PR.replace("Closes #123", "none"), VALID_ISSUE, ["risk:L2", "status:verifying"])
         self.assertIn("AT-CONTRACT-003", [finding.code for finding in findings])
 
     def test_unchecked_mandatory_evidence_is_blocked(self):
-        findings = validate_pr_contract(VALID_PR.replace("- [x] 上传成功", "- [ ] 上传成功"), VALID_ISSUE, ["risk:L2"])
+        findings = validate_pr_contract(VALID_PR.replace("- [x] 上传成功", "- [ ] 上传成功"), VALID_ISSUE, ["risk:L2", "status:verifying"])
         self.assertIn("AT-CONTRACT-004", [finding.code for finding in findings])
 
     def test_self_approved_qa_is_blocked(self):
-        findings = validate_pr_contract(VALID_PR.replace("独立上下文：是", "独立上下文：否"), VALID_ISSUE, ["risk:L2"])
+        findings = validate_pr_contract(VALID_PR.replace("独立上下文：是", "独立上下文：否"), VALID_ISSUE, ["risk:L2", "status:verifying"])
         self.assertIn("AT-QA-001", [finding.code for finding in findings])
 
     def test_qa_pass_without_verifiable_fields_is_blocked(self):
         body = VALID_PR.replace("验收者：independent-verifier\n", "").replace("QA 上下文：qa-session-1\n", "")
-        findings = validate_pr_contract(body, VALID_ISSUE, ["risk:L2"], current_sha=HEAD_SHA)
+        findings = validate_pr_contract(body, VALID_ISSUE, ["risk:L2", "status:verifying"], current_sha=HEAD_SHA)
         self.assertIn("AT-QA-003", [finding.code for finding in findings])
 
+    def test_qa_evidence_must_be_https_artifact(self):
+        body = VALID_PR.replace("证据：https://github.com/example/actions/runs/1", "证据：manual notes only")
+        findings = validate_pr_contract(body, VALID_ISSUE, ["risk:L2", "status:verifying"], current_sha=HEAD_SHA)
+        self.assertIn("AT-QA-008", [finding.code for finding in findings])
+
     def test_stale_qa_commit_is_blocked(self):
-        findings = validate_pr_contract(VALID_PR, VALID_ISSUE, ["risk:L2"], current_sha="def456")
+        findings = validate_pr_contract(VALID_PR, VALID_ISSUE, ["risk:L2", "status:verifying"], current_sha="def456")
         self.assertIn("AT-QA-004", [finding.code for finding in findings])
 
     def test_qa_context_must_differ_from_implementation_context(self):
         body = VALID_PR.replace("QA 上下文：qa-session-1", "QA 上下文：implement-session-1")
-        findings = validate_pr_contract(body, VALID_ISSUE, ["risk:L2"], current_sha=HEAD_SHA)
+        findings = validate_pr_contract(body, VALID_ISSUE, ["risk:L2", "status:verifying"], current_sha=HEAD_SHA)
         self.assertIn("AT-QA-005", [finding.code for finding in findings])
 
     def test_pass_status_requires_explicit_verify_stage(self):

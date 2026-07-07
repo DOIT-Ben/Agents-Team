@@ -3,13 +3,14 @@ name: Collaboration Gate
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, edited]
+    types: [opened, synchronize, reopened, ready_for_review, edited, labeled, unlabeled]
   workflow_dispatch:
 
 permissions:
   contents: read
   pull-requests: read
   issues: read
+  checks: read
 
 jobs:
   validate-collaboration:

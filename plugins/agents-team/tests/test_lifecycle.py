@@ -28,9 +28,9 @@ class LifecycleTests(unittest.TestCase):
         findings = validate_transition("implemented", "pass", risk="L2")
         self.assertIn("AT-STATE-002", [finding.code for finding in findings])
 
-    def test_l3_cannot_start_without_decision(self):
+    def test_l3_ready_to_in_progress_uses_same_lifecycle_transition_as_l2(self):
         findings = validate_transition("ready", "in-progress", risk="L3", decision_approved=False)
-        self.assertIn("AT-STATE-003", [finding.code for finding in findings])
+        self.assertEqual(findings, [])
 
     def test_fail_can_only_return_to_in_progress(self):
         self.assertEqual(validate_transition("fail", "in-progress", risk="L2"), [])
