@@ -30,6 +30,10 @@ bootstrap Gate 通过后才可考虑合并初始化 PR。
 修正 PR 正文证据时不需要制造新提交；`edited` 事件会针对同一 head SHA 重新执行门禁，避免证据刚写入就因新提交失效。
 PR 正文中的测试门禁字段只是可读摘要；生成的 Gate 会读取当前 head 的 GitHub Checks / workflow run 作为测试事实源。
 
+注意：Agents-Team 不是测试执行器。它只能读取和校验目标仓库已有或已配置的 GitHub Checks / workflow run；如果仓库没有真实 CI 或分支保护，Gate 不能替代这些工程基础设施。
+
+如果仓库有多个无关检查，建议在 `.codex/team-collaboration.json` 中配置 `enforcement.requiredCheckNames`，只把真正的测试/构建检查列为必须通过项。未配置时，Gate 会沿用保守模式：当前 head 上任何 completed check 失败都会 BLOCK。
+
 ## 执行 Goal
 
 L2/L3 Issue 必须依次包含 Goal、必须完成、验收门禁、任务边界、风险等级、依赖与阻塞条件。
@@ -38,9 +42,11 @@ L2/L3 Issue 必须依次包含 Goal、必须完成、验收门禁、任务边界
 
 PR 必须在 `Worker ownership` 区块声明允许修改的仓库相对路径，目录以 `/` 结尾。生成的 Gate 会读取 PR changed files，任何未被声明路径覆盖的文件变更都会 BLOCK，而不是 warning。
 L2/L3 PR 还必须在 `Risk path classification` 区块为每个 changed file 声明路径分类，分类限 `standard`、`criticalPaths`、`protectedFiles`、`productionPaths`、`realProviderPaths`；缺失或未覆盖的 changed file 必须 BLOCK。L1 可保持轻量规则，不强制该分类。
+如果 `.codex/team-collaboration.json` 的 `risk` 配置命中了 changed file，PR 中的 `Risk path classification` 必须和配置分类一致，不能把 `protectedFiles`、`productionPaths` 或 `realProviderPaths` 降级写成 `standard`。命中 `productionPaths` 或 `realProviderPaths` 的变更必须升级为 L3 并绑定批准事件。
 
 L3 涉及数据、核心契约、权限、密钥、费用、真实 Provider 或生产环境，实施前必须暂停并请求用户确认。
 L3 的正文确认只作为说明；PR Gate 还必须取得可审计的 `L3 approval event`，字段至少包含 `actor`、`timestamp`、`scope`、`risk: L3` 和当前 PR head 的 `commitSha`。无法接入平台事件时，可先用本地 JSON fixture 接入验证器，但不得把 Issue/PR 正文文本当作批准事件。
+当前 Beta 中，如果目标仓库没有接入真实批准事件来源，L3 应按 fail-closed 处理，不要把它当成已经完整生产可用的审批闭环。
 
 ### 工程生命周期
 
@@ -63,8 +69,12 @@ plan-team-goal -> build-team-goal -> review-team-goal -> ship-team-goal
 没有独立上下文时不能伪造独立 QA。任何必须完成项无证据、指定测试失败、P0/P1 未解决或任务边界违规都必须 FAIL。
 
 L2/L3 的 PR 必须记录可验证的 QA 证据：独立上下文、验收者、实现上下文、QA 上下文、QA 复核的当前 `commitSha`、PASS/FAIL/BLOCKED 结论和证据链接。QA 上下文必须与实现上下文不同，`commitSha` 必须等于当前 PR head。
+L2/L3 声明 PASS 时，QA `证据` 必须是可审计的 HTTPS artifact、session log、review thread 或 CI run URL；普通文本说明不能作为独立 QA 证据。
 L3 的批准事件同样必须绑定当前 head；事件缺失、字段缺失、风险不是 L3、时间戳无效或 `commitSha` 与当前 head 不一致时，Gate 必须失败。
-生命周期标签顺序为 `status:draft -> status:ready -> status:in-progress -> status:implemented -> status:verifying -> status:pass|status:fail -> status:mergeable`；`status:pass` 必须由 verifier 在 QA 区块记录 `验证阶段：verify` 后才允许出现。
+生命周期标签属于 PR 本身，顺序为 `status:draft -> status:ready -> status:in-progress -> status:implemented -> status:verifying -> status:pass|status:fail -> status:mergeable`；PR 必须且只能有一个有效 `status:*` 标签，`status:pass` 必须由 verifier 在 QA 区块记录 `验证阶段：verify` 后才允许出现。
+生成的 Gate 会读取 PR 自身 issue timeline label events，并验证 `status:*` 历史转移没有跳过顺序。也可以用 `--timeline-file` 接入本地 JSON fixture；缺少 timeline 权限或缺少 `status:*` 事件时按 fail-closed 处理。当前 Beta 的 L3 approval event 绑定当前 PR head，用于合并前 Gate，不声称单独证明开工前批准顺序。
+
+当前 Gate 主要检查 QA 证据字段完整性、一致性和当前 head 绑定；它不能单独证明上下文真的独立，也不能替代外部审计日志、平台身份或人工复核。
 
 ## 本地反馈导出
 
@@ -118,4 +128,6 @@ python PLUGIN_ROOT/scripts/manage_project.py remove /path/to/project
 - GitHub 分支保护属于仓库设置，必须由有权限的用户或连接器配置。
 - 自动扫描结果需要 Codex 判断；不能可靠识别的构建和测试命令必须询问用户。
 - Plugin 不承诺单靠文字规则实现绝对服从；可机械约束由项目验证器和 CI 承担。
+- 当前 Beta 的 L3 approval、独立 QA 和生命周期顺序仍需要真实平台事件、日志或人工纪律配合；不要宣传成强防伪系统。
+- 反馈脱敏是 best-effort 正则与人工确认结合，不保证覆盖所有自定义密钥、客户数据或私有业务片段。
 - Codex Plugin 不原生发现 Claude Code 风格的根目录 `agents/`；角色契约位于 `references/roles/`，由主 Skill 显式加载。

@@ -7,7 +7,7 @@ description: Use when an initialized Agents-Team Goal needs a deterministic engi
 
 ## Entry Gate
 
-Read `AGENTS.md`, `.codex/team-collaboration.json`, the linked Goal Issue, current lifecycle labels, and the requested intent. Stop when the Goal contract is invalid or L2/L3 prerequisites cannot be read.
+Read `AGENTS.md`, `.codex/team-collaboration.json`, the linked Goal Issue, current PR lifecycle labels, and the requested intent. Stop when the Goal contract is invalid or L2/L3 prerequisites cannot be read.
 
 ## Workflow
 

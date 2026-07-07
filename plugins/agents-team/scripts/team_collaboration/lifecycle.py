@@ -46,13 +46,4 @@ def validate_transition(previous: str, current: str, *, risk: str, decision_appr
             "return to the last valid state and follow the required gates in order",
             f"{previous}->{current}",
         )]
-    if risk == "L3" and previous == "ready" and current == "in-progress" and not decision_approved:
-        return [Finding(
-            "AT-STATE-003",
-            "error",
-            "L3 decision",
-            "L3 work cannot start without explicit user approval",
-            "record the approved design, cost, risk and rollback decision",
-            "decision:approved missing",
-        )]
     return []

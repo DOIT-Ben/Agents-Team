@@ -66,7 +66,7 @@ artifact: <GitHub Actions run or inspectable artifact URL>
 - 入口与步骤：
 - 预期：
 - 实际：
-- 证据：
+- 证据：<HTTPS artifact/session/review URL; plain text is not sufficient for L2/L3 PASS>
 
 ## QA 独立性与结论
 
@@ -77,7 +77,7 @@ artifact: <GitHub Actions run or inspectable artifact URL>
 - commitSha：<exact current PR head SHA verified by QA>
 - 验证阶段：verify / not-run
 - 结论：PASS / FAIL / BLOCKED
-- 证据：
+- 证据：<HTTPS artifact/session/review URL; plain text is not sufficient for L2/L3 PASS>
 
 ## 剩余风险
 

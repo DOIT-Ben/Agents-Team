@@ -22,6 +22,7 @@ EXPECTED_MANAGED_FILES = frozenset(
         "docs/adr/README.md",
     }
 )
+RISK_CATEGORIES = ("criticalPaths", "protectedFiles", "productionPaths", "realProviderPaths")
 REQUIRED = sorted(target for target in EXPECTED_MANAGED_FILES if target != "AGENTS.md#TEAM-COLLABORATION") + ["AGENTS.md"]
 BLOCK_RE = re.compile(
     r"<!-- TEAM-COLLABORATION:START(?: [^>]*)? -->\n.*?\n<!-- TEAM-COLLABORATION:END -->\n?",
@@ -43,6 +44,33 @@ def managed_file_set_errors(managed_files: dict[str, str]) -> list[str]:
     return errors
 
 
+def config_shape_errors(config: dict) -> list[str]:
+    errors: list[str] = []
+    paths = config.get("paths", {})
+    if isinstance(paths, dict):
+        for key, values in paths.items():
+            if not isinstance(values, list) or not all(isinstance(path, str) and path.strip() for path in values):
+                errors.append(f"paths.{key} must be a list of non-empty strings")
+    else:
+        errors.append("paths must be an object")
+    risk = config.get("risk", {})
+    if isinstance(risk, dict):
+        for category in RISK_CATEGORIES:
+            values = risk.get(category, [])
+            if not isinstance(values, list) or not all(isinstance(path, str) and path.strip() for path in values):
+                errors.append(f"risk.{category} must be a list of non-empty strings")
+    else:
+        errors.append("risk must be an object")
+    enforcement = config.get("enforcement", {})
+    if isinstance(enforcement, dict):
+        names = enforcement.get("requiredCheckNames", [])
+        if not isinstance(names, list) or not all(isinstance(name, str) and name.strip() for name in names):
+            errors.append("enforcement.requiredCheckNames must be a list of non-empty strings")
+    else:
+        errors.append("enforcement must be an object")
+    return errors
+
+
 def main() -> int:
     root = Path(sys.argv[1] if len(sys.argv) > 1 else ".").resolve()
     errors = [f"missing: {path}" for path in REQUIRED if not (root / path).is_file()]
@@ -52,6 +80,7 @@ def main() -> int:
             config = json.loads(config_path.read_text(encoding="utf-8"))
             if config.get("mechanism", {}).get("id") != "agents-team":
                 errors.append("invalid mechanism.id")
+            errors.extend(config_shape_errors(config))
             managed_files = config.get("managedFiles", {})
             if not isinstance(managed_files, dict):
                 errors.append("managedFiles must be an object")

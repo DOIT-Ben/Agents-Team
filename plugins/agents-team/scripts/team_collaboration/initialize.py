@@ -140,6 +140,7 @@ def _build_config(root: Path, profile: dict[str, Any], managed: dict[str, str]) 
         "enforcement": {
             "mode": "strict",
             "failClosedRisks": ["L2", "L3"],
+            "requiredCheckNames": [],
             "requireLinkedIssue": {"L1": False, "L2": True, "L3": True},
             "requireIndependentQA": {"L1": False, "L2": True, "L3": True},
             "requireFailureRecord": True,

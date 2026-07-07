@@ -24,6 +24,17 @@ ISSUE_LINK = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)\b
 PLACEHOLDER = re.compile(r"<[^>]+>|待验收|待补充|TODO", re.IGNORECASE)
 L3_REQUIRED_FIELDS = ["用户确认", "方案", "回滚"]
 RISK_PATH_CATEGORIES = {"standard", "criticalPaths", "protectedFiles", "productionPaths", "realProviderPaths"}
+CONFIGURED_RISK_CATEGORIES = ("realProviderPaths", "productionPaths", "protectedFiles", "criticalPaths")
+STATUS_TRANSITIONS = {
+    "draft": {"ready"},
+    "ready": {"in-progress"},
+    "in-progress": {"implemented"},
+    "implemented": {"verifying"},
+    "verifying": {"pass", "fail"},
+    "pass": {"mergeable"},
+    "fail": {"in-progress"},
+    "mergeable": set(),
+}
 
 
 def sections(body: str) -> dict[str, str]:
@@ -40,6 +51,19 @@ def scalar(block: str, name: str) -> str:
     return match.group(1).strip() if match else ""
 
 
+def risk_from_contract(pr_body: str, issue_body: str, labels: list[str] | None = None) -> str:
+    labels_provided = labels is not None
+    labels = labels or []
+    candidates = [sections(pr_body).get("风险等级", ""), sections(issue_body).get("风险等级", ""), *labels]
+    found: set[str] = set()
+    for candidate in candidates:
+        found.update("L" + match for match in re.findall(r"\bL([123])\b", candidate, re.IGNORECASE))
+    for risk in ("L3", "L2", "L1"):
+        if risk in found:
+            return risk
+    return ""
+
+
 def valid_timestamp(value: str) -> bool:
     try:
         datetime.fromisoformat(value.replace("Z", "+00:00"))
@@ -49,11 +73,48 @@ def valid_timestamp(value: str) -> bool:
 
 
 def status_from_labels(labels: list[str]) -> str:
+    statuses: list[str] = []
     for label in labels:
         match = re.search(r"\bstatus:([a-z-]+)\b", label, re.IGNORECASE)
         if match:
-            return match.group(1).lower()
-    return ""
+            statuses.append(match.group(1).lower())
+    if len(statuses) != 1 or statuses[0] not in STATUS_TRANSITIONS:
+        return ""
+    return statuses[0]
+
+
+def status_from_label_name(name: str) -> str:
+    match = re.search(r"\bstatus:([a-z-]+)\b", name or "", re.IGNORECASE)
+    status = match.group(1).lower() if match else ""
+    return status if status in STATUS_TRANSITIONS else ""
+
+
+def status_events_from_timeline(timeline: list[dict]) -> list[str]:
+    statuses: list[str] = []
+    for event in timeline:
+        if not isinstance(event, dict) or str(event.get("event") or "") != "labeled":
+            continue
+        label = event.get("label") or {}
+        name = str(label.get("name") if isinstance(label, dict) else "")
+        status = status_from_label_name(name)
+        if status:
+            statuses.append(status)
+    return statuses
+
+
+def validate_status_timeline(timeline: list[dict], current_status: str, risk: str, approval_event: dict | None = None) -> list[str]:
+    statuses = status_events_from_timeline(timeline)
+    if not statuses:
+        return ["status timeline is missing status:* label events"]
+    if statuses[0] != "draft":
+        return ["status timeline must start at draft"]
+    if current_status and statuses[-1] != current_status:
+        return [f"status timeline ends at {statuses[-1]}, not current status {current_status}"]
+    errors: list[str] = []
+    for previous, current in zip(statuses, statuses[1:]):
+        if current not in STATUS_TRANSITIONS.get(previous, set()):
+            errors.append(f"illegal status transition: {previous} -> {current}")
+    return errors
 
 
 def normalize_repo_path(value: str) -> str:
@@ -89,6 +150,9 @@ def path_is_owned(path: str, allowed_paths: list[str]) -> bool:
     if not normalized:
         return False
     for allowed in allowed_paths:
+        allowed = normalize_repo_path(allowed)
+        if not allowed:
+            continue
         if allowed.endswith("/") and normalized.startswith(allowed):
             return True
         if normalized == allowed:
@@ -138,9 +202,37 @@ def validate_risk_path_classification(risk: str, changed_files: list[str] | None
     return errors
 
 
+def validate_configured_risk_paths(
+    risk: str,
+    changed_files: list[str] | None,
+    classification_block: str,
+    risk_config: dict | None,
+) -> list[str]:
+    if changed_files is None or not isinstance(risk_config, dict):
+        return []
+    entries, _ = risk_path_entries(classification_block)
+    errors: list[str] = []
+    for changed_file in changed_files:
+        for category in CONFIGURED_RISK_CATEGORIES:
+            configured_paths = risk_config.get(category, [])
+            if not isinstance(configured_paths, list) or not all(isinstance(path, str) and path.strip() for path in configured_paths):
+                errors.append(f"invalid risk config: risk.{category} must be a list of non-empty strings")
+                continue
+            if not path_is_owned(changed_file, configured_paths):
+                continue
+            if category in {"realProviderPaths", "productionPaths"} and risk != "L3":
+                errors.append(f"configured {category} path requires L3: {changed_file}")
+            matching_entries = [(path, declared_category) for path, declared_category in entries if path_is_owned(changed_file, [path])]
+            declared = max(matching_entries, key=lambda item: len(normalize_repo_path(item[0])), default=("", ""))[1]
+            if declared != category:
+                errors.append(f"configured risk category for {changed_file} is {category}, not {declared or 'unclassified'}")
+            break
+    return errors
+
+
 def validate_l3_approval_event(event: dict | None, head_sha: str) -> list[str]:
     if event is None:
-        return ["L3 approval event is missing"]
+        return ["L3 approval event is missing; L3 is fail-closed until --approval-event-file provides a current-head platform or local approval event"]
     missing = [name for name in ("actor", "timestamp", "scope", "risk", "commitSha") if not str(event.get(name, "")).strip()]
     if missing:
         return ["L3 approval event missing: " + ", ".join(missing)]
@@ -163,7 +255,9 @@ def validate(
     labels: list[str] | None = None,
     approval_event: dict | None = None,
     changed_files: list[str] | None = None,
+    risk_config: dict | None = None,
 ) -> list[str]:
+    labels_provided = labels is not None
     labels = labels or []
     errors: list[str] = []
     pr = sections(pr_body)
@@ -197,9 +291,11 @@ def validate(
     if artifact and not re.match(r"https://", artifact):
         errors.append("test evidence artifact must be an HTTPS URL")
 
-    risk = pr.get("风险等级", "") + "\n" + issue.get("风险等级", "")
-    normalized_risk = "L3" if re.search(r"\bL3\b", risk, re.IGNORECASE) else "L2" if re.search(r"\bL2\b", risk, re.IGNORECASE) else "L1" if re.search(r"\bL1\b", risk, re.IGNORECASE) else ""
+    normalized_risk = risk_from_contract(pr_body, issue_body, labels)
+    if labels_provided and not status_from_labels(labels):
+        errors.append("PR must have exactly one recognized status:* label")
     errors.extend(validate_risk_path_classification(normalized_risk, changed_files, pr.get("Risk path classification", "")))
+    errors.extend(validate_configured_risk_paths(normalized_risk, changed_files, pr.get("Risk path classification", ""), risk_config))
     if normalized_risk in {"L2", "L3"}:
         qa = pr.get("QA 独立性与结论", "")
         if not re.search(r"独立上下文\s*[：:]\s*是", qa):
@@ -216,6 +312,9 @@ def validate(
         qa_context = scalar(qa, "QA 上下文")
         if implementation_context and qa_context and implementation_context == qa_context:
             errors.append("QA context must differ from implementation context")
+        qa_evidence = scalar(qa, "证据")
+        if qa_evidence and not re.match(r"https://", qa_evidence):
+            errors.append("QA evidence artifact must be an HTTPS URL")
         if status_from_labels(labels) == "pass" and scalar(qa, "验证阶段").lower() != "verify":
             errors.append("PASS status requires explicit verify stage")
     if normalized_risk == "L3":
@@ -226,11 +325,33 @@ def validate(
     return errors
 
 
-def validate_check_runs(payload: dict, head_sha: str) -> list[str]:
+def validate_check_runs(payload: dict, head_sha: str, required_names: list[str] | None = None) -> list[str]:
     runs = payload.get("check_runs") or []
     current_runs = [run for run in runs if str(run.get("head_sha") or "") == head_sha]
     if not current_runs:
         return ["GitHub Checks evidence missing for current head"]
+
+    required_names = [name for name in (required_names or []) if str(name).strip()]
+    if required_names:
+        errors: list[str] = []
+        runs_by_name: dict[str, list[dict]] = {}
+        for run in current_runs:
+            runs_by_name.setdefault(str(run.get("name") or ""), []).append(run)
+        for name in required_names:
+            named_runs = runs_by_name.get(name, [])
+            if not named_runs:
+                errors.append(f"required GitHub Check {name} is missing for current head")
+                continue
+            completed = [run for run in named_runs if str(run.get("status") or "") == "completed"]
+            if not completed:
+                statuses = ", ".join(sorted({str(run.get("status") or "missing status") for run in named_runs}))
+                errors.append(f"required GitHub Check {name} is not completed for current head: {statuses}")
+                continue
+            failed = [run for run in completed if str(run.get("conclusion") or "") != "success"]
+            if failed:
+                conclusions = ", ".join(sorted({str(run.get("conclusion") or "missing conclusion") for run in failed}))
+                errors.append(f"required GitHub Check {name} did not pass: {conclusions}")
+        return errors
 
     completed = [run for run in current_runs if str(run.get("status") or "") == "completed"]
     if not completed:
@@ -253,7 +374,7 @@ def validate_check_runs(payload: dict, head_sha: str) -> list[str]:
 def fetch_issue(repo: str, number: int, token: str) -> str:
     request = urllib.request.Request(
         f"https://api.github.com/repos/{repo}/issues/{number}",
-        headers={"Accept": "application/vnd.github+json", "Authorization": f"Bearer {token}", "User-Agent": "agents-team-gate"},
+        headers={"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", "Authorization": f"Bearer {token}", "User-Agent": "agents-team-gate"},
     )
     try:
         with urllib.request.urlopen(request, timeout=20) as response:
@@ -265,7 +386,7 @@ def fetch_issue(repo: str, number: int, token: str) -> str:
 def fetch_check_runs(repo: str, head_sha: str, token: str) -> dict:
     request = urllib.request.Request(
         f"https://api.github.com/repos/{repo}/commits/{head_sha}/check-runs",
-        headers={"Accept": "application/vnd.github+json", "Authorization": f"Bearer {token}", "User-Agent": "agents-team-gate"},
+        headers={"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", "Authorization": f"Bearer {token}", "User-Agent": "agents-team-gate"},
     )
     try:
         with urllib.request.urlopen(request, timeout=20) as response:
@@ -281,7 +402,7 @@ def fetch_changed_files(repo: str, number: int, token: str) -> list[str]:
     while True:
         request = urllib.request.Request(
             f"https://api.github.com/repos/{repo}/pulls/{number}/files?per_page=100&page={page}",
-            headers={"Accept": "application/vnd.github+json", "Authorization": f"Bearer {token}", "User-Agent": "agents-team-gate"},
+            headers={"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", "Authorization": f"Bearer {token}", "User-Agent": "agents-team-gate"},
         )
         try:
             with urllib.request.urlopen(request, timeout=20) as response:
@@ -296,12 +417,88 @@ def fetch_changed_files(repo: str, number: int, token: str) -> list[str]:
         page += 1
 
 
+def fetch_issue_timeline(repo: str, number: int, token: str) -> list[dict]:
+    events: list[dict] = []
+    page = 1
+    while True:
+        request = urllib.request.Request(
+            f"https://api.github.com/repos/{repo}/issues/{number}/timeline?per_page=100&page={page}",
+            headers={"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", "Authorization": f"Bearer {token}", "User-Agent": "agents-team-gate"},
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=20) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+        except (urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError) as exc:
+            raise RuntimeError(f"cannot read Issue timeline: {exc}") from exc
+        if not isinstance(payload, list):
+            raise RuntimeError("cannot read Issue timeline: response is not a list")
+        events.extend(item for item in payload if isinstance(item, dict))
+        if len(payload) < 100:
+            return events
+        page += 1
+
+
+def load_required_check_names() -> list[str]:
+    config = load_project_config()
+    names, errors = required_check_names_from_config(config)
+    if errors:
+        raise RuntimeError("invalid team collaboration config: " + "; ".join(errors))
+    return names
+
+
+def required_check_names_from_config(config: dict) -> tuple[list[str], list[str]]:
+    enforcement = config.get("enforcement") or {}
+    names = enforcement.get("requiredCheckNames", []) if isinstance(enforcement, dict) else []
+    if not isinstance(names, list):
+        return [], ["enforcement.requiredCheckNames must be a list of non-empty strings"]
+    result: list[str] = []
+    for name in names:
+        if not isinstance(name, str) or not name.strip():
+            return [], ["enforcement.requiredCheckNames must be a list of non-empty strings"]
+        result.append(name.strip())
+    return result, []
+
+
+def config_shape_errors(config: dict) -> list[str]:
+    errors: list[str] = []
+    risk = config.get("risk") if isinstance(config, dict) else {}
+    if isinstance(risk, dict):
+        for category in CONFIGURED_RISK_CATEGORIES:
+            values = risk.get(category, [])
+            if not isinstance(values, list) or not all(isinstance(path, str) and path.strip() for path in values):
+                errors.append(f"risk.{category} must be a list of non-empty strings")
+    elif "risk" in config:
+        errors.append("risk must be an object")
+    _, check_errors = required_check_names_from_config(config)
+    errors.extend(check_errors)
+    return errors
+
+
+def load_risk_config() -> dict:
+    config = load_project_config()
+    errors = config_shape_errors(config)
+    if errors:
+        raise RuntimeError("invalid team collaboration config: " + "; ".join(errors))
+    risk = config.get("risk") if isinstance(config, dict) else {}
+    return risk if isinstance(risk, dict) else {}
+
+
+def load_project_config() -> dict:
+    config_path = Path(__file__).resolve().parents[1] / "team-collaboration.json"
+    try:
+        payload = json.loads(config_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--event", type=Path, required=True)
     parser.add_argument("--issue-body-file", type=Path)
     parser.add_argument("--approval-event-file", type=Path)
     parser.add_argument("--changed-files-file", type=Path)
+    parser.add_argument("--timeline-file", type=Path)
     args = parser.parse_args()
     event = json.loads(args.event.read_text(encoding="utf-8"))
     token = os.environ.get("GITHUB_TOKEN", "")
@@ -349,9 +546,22 @@ def main() -> int:
             except RuntimeError as exc:
                 print(f"Agents-Team gate blocked: {exc}")
                 return 1
-        errors = validate(pr_body, issue_body, head_sha, labels=labels, approval_event=approval_event, changed_files=changed_files)
+        errors = validate(pr_body, issue_body, head_sha, labels=labels, approval_event=approval_event, changed_files=changed_files, risk_config=load_risk_config())
+        current_status = status_from_labels(labels)
+        if args.timeline_file:
+            timeline = json.loads(args.timeline_file.read_text(encoding="utf-8"))
+            if not isinstance(timeline, list):
+                print("Agents-Team gate blocked: timeline must be a JSON array")
+                return 1
+        else:
+            try:
+                timeline = fetch_issue_timeline(repo, int(pull_request.get("number") or 0), token)
+            except RuntimeError as exc:
+                print(f"Agents-Team gate blocked: {exc}")
+                return 1
+        errors.extend(validate_status_timeline(timeline, current_status=current_status, risk=risk_from_contract(pr_body, issue_body, labels), approval_event=approval_event))
         try:
-            errors.extend(validate_check_runs(fetch_check_runs(repo, head_sha, token), head_sha))
+            errors.extend(validate_check_runs(fetch_check_runs(repo, head_sha, token), head_sha, required_names=load_required_check_names()))
         except RuntimeError as exc:
             print(f"Agents-Team gate blocked: {exc}")
             return 1

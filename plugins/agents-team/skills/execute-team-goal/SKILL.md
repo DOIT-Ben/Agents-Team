@@ -7,7 +7,7 @@ description: Use when implementing a scoped software Goal under an initialized t
 
 ## Entry Gate
 
-Read `AGENTS.md`, `.codex/team-collaboration.json`, the linked Issue, lifecycle labels, and relevant code. L2/L3 work must have an Issue containing, in order: Goal, 必须完成, 验收门禁, 任务边界, risk, dependencies, and rollback. Stop when the Protocol 2.0 contract is absent, vague, or blocked.
+Read `AGENTS.md`, `.codex/team-collaboration.json`, the linked Issue, PR lifecycle labels, and relevant code. L2/L3 work must have an Issue containing, in order: Goal, 必须完成, 验收门禁, 任务边界, risk, dependencies, and rollback. Stop when the Protocol 2.0 contract is absent, vague, or blocked.
 
 ## Workflow
 

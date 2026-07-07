@@ -121,7 +121,34 @@ def core_messages(pr_body: str) -> list[str]:
         for finding in validate_pr_contract(
             pr_body,
             VALID_ISSUE,
-            ["risk:L2"],
+            ["risk:L2", "status:verifying"],
+            current_sha=HEAD_SHA,
+            changed_files=CHANGED_FILES,
+        )
+    ]
+
+
+def core_messages_with_risk_config(pr_body: str, risk_config: dict[str, list[str]]) -> list[str]:
+    return [
+        finding.message
+        for finding in validate_pr_contract(
+            pr_body,
+            VALID_ISSUE,
+            ["risk:L2", "status:verifying"],
+            current_sha=HEAD_SHA,
+            changed_files=CHANGED_FILES,
+            risk_config=risk_config,
+        )
+    ]
+
+
+def core_messages_with_issue(pr_body: str, issue_body: str) -> list[str]:
+    return [
+        finding.message
+        for finding in validate_pr_contract(
+            pr_body,
+            issue_body,
+            ["risk:L2", "status:verifying"],
             current_sha=HEAD_SHA,
             changed_files=CHANGED_FILES,
         )
@@ -142,6 +169,17 @@ class ContractSemanticParityTests(unittest.TestCase):
         pr_body = VALID_PR.replace(f"commitSha: {HEAD_SHA}", "commitSha: stale456", 1)
         self.assertTrue(any("current head" in message for message in core_messages(pr_body)))
         self.assertTrue(any("head.sha" in error for error in GENERATED.validate(pr_body, VALID_ISSUE, HEAD_SHA, changed_files=CHANGED_FILES)))
+
+    def test_core_and_generated_reject_configured_risk_mismatch(self):
+        pr_body = VALID_PR.replace("plugins/agents-team/scripts/team_collaboration/: protectedFiles", "plugins/agents-team/scripts/team_collaboration/: standard")
+        risk_config = {"protectedFiles": ["plugins/agents-team/scripts/team_collaboration/"]}
+        self.assertTrue(any("configured risk category" in message for message in core_messages_with_risk_config(pr_body, risk_config)))
+        self.assertTrue(any("configured risk category" in error for error in GENERATED.validate(pr_body, VALID_ISSUE, HEAD_SHA, changed_files=CHANGED_FILES, risk_config=risk_config)))
+
+    def test_core_and_generated_treat_issue_l3_as_l3(self):
+        issue_body = VALID_ISSUE.replace("L2", "L3") + "\n## L3 方案与用户确认\n\n用户确认：approved\n"
+        self.assertTrue(any("L3 approval event" in message for message in core_messages_with_issue(VALID_PR, issue_body)))
+        self.assertTrue(any("L3 approval event" in error for error in GENERATED.validate(VALID_PR, issue_body, HEAD_SHA, changed_files=CHANGED_FILES)))
 
 
 if __name__ == "__main__":

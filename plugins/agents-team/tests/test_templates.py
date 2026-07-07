@@ -39,6 +39,10 @@ class TemplateContractTests(unittest.TestCase):
             self.assertIn(field, text)
         for field in ["验收者", "实现上下文", "QA 上下文", "验证阶段", "证据"]:
             self.assertIn(field, text)
+        self.assertIn("HTTPS", text)
+        self.assertIn("artifact", text)
+        qa_section = text[text.index("## QA 独立性与结论"): text.index("## 剩余风险")]
+        self.assertIn("证据：<HTTPS artifact/session/review URL", qa_section)
         for field in ["L3 approval event", "actor", "scope", "risk", "commitSha"]:
             self.assertIn(field, text)
         for field in ["仓库相对路径", "changed files", "Gate 阻断", "Risk path classification", "criticalPaths", "protectedFiles"]:
@@ -52,9 +56,10 @@ class TemplateContractTests(unittest.TestCase):
         self.assertNotIn("\n  push:\n", workflow)
         for phrase in [
             "pull-requests: read", "issues: read", "validate_pr_contract.py",
-            "GITHUB_EVENT_PATH", "edited", "ready_for_review",
+            "checks: read", "GITHUB_EVENT_PATH", "edited", "ready_for_review", "labeled", "unlabeled",
         ]:
             self.assertIn(phrase, workflow)
+        self.assertIn("X-GitHub-Api-Version", validator)
 
     def test_initialization_skill_explains_bootstrap_gate(self):
         skill = (PLUGIN_ROOT / "skills" / "initialize-team-collaboration" / "SKILL.md").read_text(encoding="utf-8")

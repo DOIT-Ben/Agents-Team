@@ -57,6 +57,8 @@ def validate_config(config: Any) -> list[str]:
     for section_name in ("paths", "risk"):
         section = config.get(section_name)
         if not isinstance(section, dict):
+            if section_name in config:
+                errors.append(f"{section_name} must be an object")
             continue
         for key, values in section.items():
             if not isinstance(values, list) or not all(isinstance(value, str) for value in values):
@@ -91,6 +93,13 @@ def validate_config(config: Any) -> list[str]:
 
         if not isinstance(enforcement.get("requireFailureRecord"), bool):
             errors.append("enforcement.requireFailureRecord must be boolean")
+
+        required_check_names = enforcement.get("requiredCheckNames", [])
+        if (
+            not isinstance(required_check_names, list)
+            or any(not isinstance(value, str) or not value.strip() for value in required_check_names)
+        ):
+            errors.append("enforcement.requiredCheckNames must be a list of non-empty strings")
 
     return errors
 
